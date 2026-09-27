@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>老後のお金・医療・介護の壁 統合シミュレーター</title>
+    <!-- SVG Favicon to avoid 404 error -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              brand: {
+                50: '#f0f9ff',
+                100: '#e0f2fe',
+                500: '#0284c7',
+                600: '#0369a1',
+                700: '#075985',
+              },
+              zoneA: {
+                DEFAULT: '#059669',
+                light: '#ecfdf5',
+                border: '#10b981',
+                badge: '#047857'
+              },
+              zoneB: {
+                DEFAULT: '#2563eb',
+                light: '#eff6ff',
+                border: '#3b82f6',
+                badge: '#1d4ed8'
+              },
+              zoneC: {
+                DEFAULT: '#e11d48',
+                light: '#fff1f2',
+                border: '#f43f5e',
+                badge: '#be123c'
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <!-- Approved Library Importmap -->
+      </head>
+  <body class="bg-slate-50 text-slate-800 antialiased min-h-screen">
+    <div id="root"></div>
+    <script type="module" src="./index.tsx"></script>
+  <script type="module" src="/index.js"></script></body>
+</html>
