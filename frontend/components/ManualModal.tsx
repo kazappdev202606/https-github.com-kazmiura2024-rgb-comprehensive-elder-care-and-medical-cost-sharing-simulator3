@@ -101,6 +101,7 @@ export const ManualModal: React.FC<ManualModalProps> = ({ isOpen, onClose }) => 
               <h4 className="font-bold text-slate-800 text-base">夫婦世帯における年の差と制度適用時期のズレ</h4>
               <p>
                 ご本人と配偶者の生年月日・年齢差により、同じ年であっても「一方は後期高齢者（1割）、もう一方は現役（3割）」といった制度適用のギャップが生じます。
+                入力パネルではご本人と配偶者の年金・就労設定を切り替えることなく両方同時に設定・確認できます。
               </p>
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2 text-xs">
                 <div className="font-bold text-slate-800">視点切り替えの活用:</div>
@@ -129,8 +130,8 @@ export const ManualModal: React.FC<ManualModalProps> = ({ isOpen, onClose }) => 
                     155万円の崖を引き起こすリスクがあるのは、課税対象であるご自身の「老齢年金」です。繰下げで増やしすぎると配偶者の他界後に自動的に課税化し、医療・介護費が跳ね上がります（※非課税である遺族年金や障害年金はいくら増えても影響ありません）。
                   </li>
                   <li>
-                    <strong>生前にNISAや非課税年金を軸にした資金設計をしておく:</strong>{' '}
-                    預貯金やNISAの取崩し、および遺族年金・障害年金はすべて所得判定ゼロです。課税される老齢年金は抑えつつ、これらの「非課税の資金」で生活費を補うことで、医療・介護費の1割負担を維持できます。
+                    <strong>生前に非課税年金や自己資産を軸にした資金設計をしておく:</strong>{' '}
+                    遺族年金・障害年金はすべて所得判定ゼロです。課税される老齢年金は抑えつつ、これらの「非課税の資金」で生活費を補うことで、医療・介護費の1割負担を維持できます。
                   </li>
                   <li>
                     <strong>介護保険料の段階を確認しておく:</strong>{' '}
@@ -148,7 +149,7 @@ export const ManualModal: React.FC<ManualModalProps> = ({ isOpen, onClose }) => 
                 <div className="border border-emerald-200 bg-emerald-50/50 p-3 rounded-xl">
                   <div className="font-bold text-emerald-900 mb-1">① 徹底的に非課税ゾーンA狙い</div>
                   <p className="text-emerald-950">
-                    年金を65歳以前で受給し年金額面を抑制（単身155万、夫婦211万以内）。生活費不足分はNISA取り崩しで補填し、高額療養費月2.46万＋特養補足給付を享受。
+                    年金を65歳以前で受給し年金額面を抑制（単身155万、夫婦211万以内）。高額療養費月2.46万＋特養補足給付を享受。
                   </p>
                 </div>
                 <div className="border border-blue-200 bg-blue-50/50 p-3 rounded-xl">
@@ -164,9 +165,9 @@ export const ManualModal: React.FC<ManualModalProps> = ({ isOpen, onClose }) => 
                   </p>
                 </div>
                 <div className="border border-amber-200 bg-amber-50/50 p-3 rounded-xl">
-                  <div className="font-bold text-amber-900 mb-1">④ NISA併用型ハイブリッド</div>
+                  <div className="font-bold text-amber-900 mb-1">④ 夫婦バランス型受給設計</div>
                   <p className="text-amber-950">
-                    公的年金は65歳受給、就労リタイア後は月3〜5万円のNISA非課税取崩しを恒常化。制度の壁を意識せずに生活満足度を最大化。
+                    公的年金は65歳受給、夫婦それぞれの就労時期と他界後の遺族厚生年金を踏まえ、生涯の自己負担を最小化。
                   </p>
                 </div>
               </div>
