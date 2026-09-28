@@ -1,7 +1,6 @@
 import React from 'react';
 import { MatrixCellData, SimulatorState, HouseholdType } from '../types';
-import { WALL_THRESHOLDS } from '../constants';
-import { X, ArrowRight, Gauge, CheckCircle, AlertTriangle, Sparkles, Sliders } from 'lucide-react';
+import { X, ArrowRight, Gauge, Sliders } from 'lucide-react';
 
 interface DetailDiagnosisModalProps {
   cell: MatrixCellData;
@@ -97,7 +96,7 @@ export const DetailDiagnosisModal: React.FC<DetailDiagnosisModalProps> = ({
               </div>
             </div>
             <span className="text-[11px] text-slate-500">
-              ※年金・給与の税社保天引き後＋NISA取崩し合算
+              ※老齢年金・就労給与の税社保天引き後概算＋遺族年金（非課税）
             </span>
           </div>
 
