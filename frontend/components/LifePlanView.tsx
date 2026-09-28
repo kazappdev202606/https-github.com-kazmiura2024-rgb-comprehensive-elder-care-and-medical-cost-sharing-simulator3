@@ -14,7 +14,8 @@ import {
   Flame,
   Info,
   Calendar,
-  Layers
+  Layers,
+  MousePointer
 } from 'lucide-react';
 
 interface LifePlanViewProps {
@@ -158,9 +159,11 @@ export const LifePlanView: React.FC<LifePlanViewProps> = ({ state, onChange }) =
 
       {/* グラフエリア */}
       {(displayMode === 'both' || displayMode === 'chart') && (
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-xs space-y-4">
+        <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-xs space-y-3">
+          {/* グラフ上部ヘッダー */}
           <div className="flex items-center justify-between border-b pb-2 flex-wrap gap-2 text-xs">
-            <span className="font-bold text-slate-700">
+            <span className="font-bold text-slate-700 flex items-center gap-1">
+              <TrendingUp className="w-3.5 h-3.5 text-indigo-600" />
               3大バケット資産推移（青: バケット2運用資産 / 緑: バケット1現金 / 灰: バケット3防衛資金）
             </span>
             <div className="flex items-center gap-3 text-[11px] font-semibold">
@@ -179,11 +182,61 @@ export const LifePlanView: React.FC<LifePlanViewProps> = ({ state, onChange }) =
             </div>
           </div>
 
-          <div className="relative pt-6 pb-2 overflow-x-auto w-full">
-            <div className="flex items-end gap-1 sm:gap-1.5 min-w-[720px] h-56 px-2 border-b border-slate-300 relative">
+          {/* ホバー連動リアルタイム・インフォメーションボード（隠れ防止＋見やすさ向上） */}
+          <div className="bg-slate-900 text-white p-3 rounded-xl flex flex-wrap items-center justify-between gap-3 text-xs shadow-inner">
+            <div className="flex items-center gap-3">
+              <div className="bg-slate-800 px-3 py-1 rounded-lg border border-slate-700 font-mono">
+                <span className="text-[10px] text-slate-400 block font-sans">着目年次</span>
+                <span className="text-base font-black text-amber-300">
+                  {activeRecord.age}歳{' '}
+                  <span className="text-xs text-slate-300 font-normal">({activeRecord.year}年)</span>
+                </span>
+              </div>
+
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-400">総金融資産:</span>
+                  <span className="text-sm font-black font-mono text-white">
+                    {activeRecord.totalAssets}万円
+                  </span>
+                  <span className="text-slate-500 font-mono text-[11px]">
+                    (手取収入: {activeRecord.totalNetIncome}万 / 支出計: {activeRecord.totalExpense}万)
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-[11px] text-slate-300 mt-0.5">
+                  <span className="text-indigo-300 font-bold font-mono">
+                    B2運用資産: {activeRecord.bucket2Balance}万円
+                  </span>
+                  <span>/</span>
+                  <span className={activeRecord.annualCashFlow >= 0 ? 'text-emerald-400 font-mono' : 'text-rose-400 font-mono'}>
+                    年間収支: {activeRecord.annualCashFlow >= 0 ? `+${activeRecord.annualCashFlow}` : activeRecord.annualCashFlow}万円
+                  </span>
+                  {activeRecord.eventLabel && (
+                    <span className="bg-amber-400/20 text-amber-300 px-1.5 py-0.2 rounded border border-amber-400/30 text-[10px]">
+                      {activeRecord.eventLabel}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1 text-[11px] text-slate-400">
+              <MousePointer className="w-3.5 h-3.5 text-slate-400" />
+              <span>棒にカーソルを合わせると年次詳細が切り替わります</span>
+            </div>
+          </div>
+
+          {/* ビジュアル・スタックバーグラフ（上部余白 pt-24 を確保しツールチップが切れないように修正） */}
+          <div className="relative pt-24 pb-3 overflow-x-auto w-full">
+            <div className="flex items-end gap-1 sm:gap-1.5 min-w-[720px] h-60 px-2 border-b border-slate-300 relative">
+              {/* 基準ゼロ線 */}
               <div className="absolute left-0 right-0 border-t border-slate-400 bottom-6 pointer-events-none z-10"></div>
 
               {timeline.map((item) => {
+                const isHovered = item.age === hoveredAge;
+                const isTargetAge = item.age === state.targetAgeYears;
+
+                // 高さ計算
                 const b1Height = Math.max(0, Math.min(40, (item.bucket1Balance / maxAsset) * 160));
                 const b3Height = Math.max(0, Math.min(40, (item.bucket3Balance / maxAsset) * 160));
                 const b2Height = item.bucket2Balance >= 0
@@ -196,12 +249,25 @@ export const LifePlanView: React.FC<LifePlanViewProps> = ({ state, onChange }) =
                     onMouseEnter={() => setHoveredAge(item.age)}
                     className="flex-1 flex flex-col items-center justify-end h-full cursor-pointer group relative"
                   >
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-16 z-30 pointer-events-none bg-slate-900 text-white text-[10px] py-1.5 px-2.5 rounded whitespace-nowrap shadow-md">
-                      {item.age}歳 ({item.year}年): 総資産 {item.totalAssets}万
-                      <br />
-                      バケット2: {item.bucket2Balance}万 / 収支: {item.annualCashFlow >= 0 ? `+${item.annualCashFlow}` : item.annualCashFlow}万
+                    {/* 最前面・上部隠れ防止ポップアップツールチップ */}
+                    <div
+                      className={`opacity-0 group-hover:opacity-100 transition-opacity duration-150 absolute -top-20 left-1/2 -translate-x-1/2 z-50 pointer-events-none bg-slate-900/95 text-white text-[10px] py-1.5 px-2.5 rounded-lg whitespace-nowrap shadow-xl border border-slate-700/80 backdrop-blur-xs flex flex-col items-center leading-tight`}
+                    >
+                      <span className="font-bold text-amber-300 text-[11px]">
+                        {item.age}歳 ({item.year}年)
+                      </span>
+                      <span className="text-white mt-0.5">
+                        総資産: <strong className="font-mono text-white">{item.totalAssets}万</strong>
+                      </span>
+                      <span className="text-indigo-300 font-mono">
+                        B2運用: {item.bucket2Balance}万 / 収支:{' '}
+                        {item.annualCashFlow >= 0 ? `+${item.annualCashFlow}` : item.annualCashFlow}万
+                      </span>
+                      {/* 下向き矢印ヒゲ */}
+                      <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 border-r border-b border-slate-700/80 rotate-45"></span>
                     </div>
 
+                    {/* 棒グラフ */}
                     <div className="w-full flex flex-col justify-end overflow-hidden">
                       {item.isDeficit ? (
                         <div
@@ -213,7 +279,9 @@ export const LifePlanView: React.FC<LifePlanViewProps> = ({ state, onChange }) =
                         <>
                           <div
                             style={{ height: `${b2Height}px` }}
-                            className="w-full bg-indigo-600 group-hover:bg-indigo-500 rounded-t-sm transition-colors"
+                            className={`w-full rounded-t-sm transition-colors ${
+                              isHovered ? 'bg-indigo-400 brightness-110' : 'bg-indigo-600 group-hover:bg-indigo-500'
+                            }`}
                           ></div>
                           <div
                             style={{ height: `${b1Height}px` }}
@@ -227,9 +295,14 @@ export const LifePlanView: React.FC<LifePlanViewProps> = ({ state, onChange }) =
                       )}
                     </div>
 
+                    {/* 横軸ラベル */}
                     <span
                       className={`text-[9px] font-mono mt-1 ${
-                        item.age % 5 === 0 ? 'font-bold text-slate-700' : 'text-slate-400'
+                        isHovered
+                          ? 'font-black text-indigo-700 underline'
+                          : item.age % 5 === 0
+                          ? 'font-bold text-slate-700'
+                          : 'text-slate-400'
                       }`}
                     >
                       {item.age % 5 === 0 ? `${item.age}` : '・'}
