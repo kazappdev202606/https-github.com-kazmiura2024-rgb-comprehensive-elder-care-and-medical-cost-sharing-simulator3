@@ -80,24 +80,24 @@ export const AdviceReports: React.FC<AdviceReportsProps> = ({ currentResult, hou
             </p>
           </div>
           <div className="mt-3 pt-2 border-t border-blue-200/60 text-[11px] text-blue-800 font-medium">
-            💡 対策: 残された側の基礎控除枠や非課税枠（NISA・遺族年金）を軸にした資金計画を推奨
+            💡 対策: 残された側の基礎控除枠や非課税収入（遺族年金等）を軸にした資金計画を推奨
           </div>
         </div>
 
-        {/* レポート③: NISAを活用した所得抑制術 */}
+        {/* レポート③: 公的年金と手取り最大化の黄金ルール */}
         <div className="bg-emerald-50/60 border border-emerald-200 rounded-2xl p-4 flex flex-col justify-between">
           <div>
             <div className="flex items-center gap-2 text-emerald-900 font-bold text-sm mb-2">
               <Sparkles className="w-4 h-4 text-emerald-600" />
-              <span>③ NISAを活用した黄金ルール</span>
+              <span>③ 年金繰下げと自己負担の黄金バランス</span>
             </div>
             <p className="text-xs text-emerald-950 leading-relaxed">
-              公的年金や給与は1円でも増えると「合計所得金額」に加算され、医療・介護の自己負担率を引き上げるトリガーになります。しかし、NISAや特定口座の源泉徴収あり（申告不要）での取崩しは公的所得判定から完全除外されます。
-              年金を繰り下げて額面を増やすよりも、年金は65歳標準で受給し、不足する生活費をNISA取崩しで補う方が総合的な手取り・公的優遇を最大化できます。
+              公的年金は増額させると安心感がありますが、1円でも基準を超えると「合計所得金額」に加算され、医療・介護の自己負担率が1割から2割〜3割へと引き上がるトリガーになります。
+              特に配偶者が他界した後は単身155万円基準へ縮小するため、自身の老齢年金を繰り下げて増やしすぎると、かえって自己負担と保険料が跳ね上がる逆転現象を招きます。年金受給開始年齢とリタイア時期のバランス設計が極めて重要です。
             </p>
           </div>
           <div className="mt-3 pt-2 border-t border-emerald-200/60 text-[11px] text-emerald-800 font-medium">
-            💡 黄金ルール: 「年金は増やしすぎず、生活費はNISAで補完」
+            💡 黄金ルール: 「額面年金だけを増やしすぎず、制度の壁を意識した受給時期の選定」
           </div>
         </div>
       </div>
