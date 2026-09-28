@@ -1,98 +1,195 @@
 export type HouseholdType = 'single' | 'couple';
-export type ActivePerspective = 'primary' | 'spouse' | 'both'; // 'both' で夫婦両方同時・並列表示
+export type ActivePerspective = 'primary' | 'spouse' | 'both';
 
-export type AppViewMode = 'matrix' | 'timeline'; // 3x3マトリクス vs 生涯推移タイムラインモード
+export type AppStep = 'step1_wall' | 'step2_lifeplan';
+export type AppViewMode = 'matrix' | 'timeline';
 
 export interface PersonProfile {
   name: string;
   ageYears: number;
   ageMonths: number;
-  lifeExpectancyYears: number; // 寿命想定（満年齢 65〜120歳、デフォルト100歳）
-  // 65歳基準公的年金（基礎年金と厚生年金・共済部分の個別設定）
-  pensionBasicMonthly: number; // 老齢基礎年金月額（国民年金・満額目安約6.8万円）
-  pensionEmployeesMonthly: number; // 老齢厚生年金月額（会社員・公務員共済等）
-  pensionAge65Monthly: number; // 合計額面月額（互換性・自動連動）
-  pensionStartAge: number; // 60〜75歳
-  careerRetireAge: number; // 正職引退年齢
-  careerMonthlySalary: number; // 正職月額給与（賞与年額÷12含む, 額面万円）
-  rehireRetireAge: number; // 再雇用・パート引退年齢
-  rehireMonthlySalary: number; // 再雇用月給（賞与月割含む, 額面万円）
-  nisaMonthlyDrawdown: number; // NISA等非課税取崩し（万円/月, 手取り）
+  lifeExpectancyYears: number; // 寿命想定（65〜120歳、デフォルト100歳）
+  pensionBasicMonthly: number;
+  pensionEmployeesMonthly: number;
+  pensionAge65Monthly: number;
+  pensionStartAge: number;
+  careerRetireAge: number;
+  careerMonthlySalary: number;
+  rehireRetireAge: number;
+  rehireMonthlySalary: number;
+}
+
+// 期間指定のアイテム（開始年齢〜終了年齢、年間金額、項目名）
+export interface PeriodItem {
+  id: string;
+  title: string;
+  startAge: number;
+  endAge: number;
+  annualAmount: number; // 万円/年
+}
+
+// 単発指定のアイテム（発生年齢、金額、項目名）
+export interface OneTimeItem {
+  id: string;
+  title: string;
+  age: number;
+  amount: number; // 万円
+}
+
+// 第2ステップ用：個人の収入・年金戦略
+export interface PersonIncomeStrategy {
+  careerRetireAge: number; // 正職リタイア年齢
+  careerNetIncomeAnnual: number; // 正職就労手取り（万円/年）
+  careerSeverancePayNet: number; // 正職退職金（手取り・万円）
+  rehireRetireAge: number; // 再雇用リタイア年齢
+  rehireNetIncomeAnnual: number; // 再雇用就労手取り（万円/年）
+  rehireSeverancePayNet: number; // 再雇用退職金（手取り・万円）
+  pensionStartAge: number; // 年金受給開始年齢
+  pensionAge65GrossAnnual: number; // 65歳時点の年金額面（万円/年）
+  pensionNetRate: number; // 年金手取り率（%、標準85%）
+  idecoNetTotal: number; // iDeCo等（手取り・万円）
+  idecoReceiveAge: number; // iDeCo受取年齢
+  investments: number; // 現在の運用資産（万円）
+}
+
+// 第2ステップ用設定
+export interface LifePlanConfig {
+  // 基本情報＆経済環境
+  inflationRate: number; // 物価上昇率（年率 %）
+  investmentReturnRate: number; // 運用利回り (NISA等・年率 %)
+
+  // 収入・年金戦略（本人・配偶者個別）
+  primaryStrategy: PersonIncomeStrategy;
+  spouseStrategy: PersonIncomeStrategy;
+  temporaryIncomes: OneTimeItem[]; // 臨時収入 (単発・随時追加可能)
+
+  // 現在の資産とバケット設定
+  currentCashSavings: number; // 現在の預貯金（万円）
+  limitToNisaCap: boolean; // チェック項目…運用をNISA枠(1800万/人)に制限する
+  bucket1Cash: number; // バケット1: 生活インフラ現金（デフォルト300万）
+  bucket3Emergency: number; // バケット3: 医療・介護防衛（デフォルト500万）
+
+  // 支出設定（随時追加・編集可能なリスト形式）
+  housingCosts: PeriodItem[]; // 住居固定費（内訳・金額・設定期間）
+  baseLivingCosts: PeriodItem[]; // 基本生活インフラ費（内訳・金額・設定期間）
+  activeLeisureAnnual: PeriodItem[]; // アクティブ娯楽費 (定額)（内訳・金額・設定期間）
+  unforeseenBudgetAnnual: number; // 使途不明金・予備費（万円/年）
+  largeLeisureOneTimes: OneTimeItem[]; // まとまった娯楽費 (単発)
+  specialPeriodExpenses: PeriodItem[]; // 期間指定の特別支出（ローン・学費・仕送り等）
 }
 
 export interface SimulatorState {
   version: number;
-  householdType: HouseholdType; // 'single' または 'couple'
+  currentStep: AppStep;
+  householdType: HouseholdType;
   perspective: ActivePerspective;
-  targetAgeYears: number; // 検証ターゲット年齢 (primary基準の満年齢)
+  targetAgeYears: number;
   primary: PersonProfile;
   spouse: PersonProfile;
+  lifePlan: LifePlanConfig;
 }
 
 export type ZoneType = 'A' | 'B' | 'C';
 
 export interface CalculationResult {
-  personAge: number; // 計算対象者の満年齢
+  personAge: number;
   personAgeMonths: number;
-  isDeceased: boolean; // 本人が寿命を迎えているか
-  isSpouseDeceased: boolean; // 配偶者が寿命を迎えているか
-  pensionGrossAnnual: number; // 自身の老齢年金年額（額面万円）
-  pensionGrossMonthly: number; // 自身の老齢年金月額（額面万円）
-  pensionNetMonthly: number; // 老齢年金手取り概算（万円）
-  survivorPensionMonthly: number; // 遺族厚生年金月額（非課税・全額手取り加算）
-  survivorPensionAnnual: number; // 遺族厚生年金年額（非課税）
-  salaryGrossAnnual: number; // 就労給与年額（額面万円）
-  salaryGrossMonthly: number; // 就労給与月額（額面万円）
-  nisaMonthly: number; // NISA非課税（万円）
-  totalGrossIncomeAnnual: number; // 個人判定基準年収（課税対象・額面万円）
-  householdGrossAnnual: number; // 世帯合計年収（課税対象・額面万円）
-  netDisposableIncomeMonthly: number; // 個人実質手取り生活費概算（万円/月）
-  householdNetDisposableIncomeMonthly: number; // 世帯合計手取り生活費概算（万円/月）
+  isDeceased: boolean;
+  isSpouseDeceased: boolean;
+  pensionGrossAnnual: number;
+  pensionGrossMonthly: number;
+  pensionNetMonthly: number;
+  survivorPensionMonthly: number;
+  survivorPensionAnnual: number;
+  salaryGrossAnnual: number;
+  salaryGrossMonthly: number;
+  totalGrossIncomeAnnual: number;
+  householdGrossAnnual: number;
+  netDisposableIncomeMonthly: number;
+  householdNetDisposableIncomeMonthly: number;
 
-  isTaxFree: boolean; // 住民税非課税判定（遺族年金は非課税のため除外）
-  careInsuranceRate: 1 | 2 | 3; // 介護負担割合 (1, 2, 3割)
-  medicalInsuranceRate: 1 | 2 | 3; // 医療窓口負担割合 (1, 2, 3割)
-  highCostCareLimitMonthly: number; // 高額介護上限 (円/月)
-  highCostMedicalLimitMonthly: number; // 高額療養費上限 (円/月)
-  hasNursingHomeFoodSubsidy: boolean; // 特養食費・居住費減免（補足給付）
-  zone: ZoneType; // A: 非課税, B: 一般(1-2割), C: 現役並み(2-3割/高負担)
+  isTaxFree: boolean;
+  careInsuranceRate: 1 | 2 | 3;
+  medicalInsuranceRate: 1 | 2 | 3;
+  highCostCareLimitMonthly: number;
+  highCostMedicalLimitMonthly: number;
+  hasNursingHomeFoodSubsidy: boolean;
+  zone: ZoneType;
 
-  // 制度の壁までのマージン（万円単位、正: 余裕、負: 超過）
-  taxFreeWallMargin: number; // 住民税非課税の壁までの余裕
-  care20WallMargin: number; // 介護2割の壁までの余裕
-  medical30WallMargin: number; // 医療現役3割の壁までの余裕
+  taxFreeWallMargin: number;
+  care20WallMargin: number;
+  medical30WallMargin: number;
 }
 
 export interface MatrixCellData {
-  rowOffset: number; // 縦軸: 給与調整 (-1: 0円完全引退, 0: 設定値, +1: +50%増収)
-  colOffset: number; // 横軸: 年金受給開始年齢 (-1: -2歳繰上げ, 0: 設定値, +1: +2歳繰下げ)
+  rowOffset: number;
+  colOffset: number;
   pensionStartAge: number;
   salaryModifierLabel: string;
   pensionModifierLabel: string;
   result: CalculationResult;
 }
 
-// 生涯推移レコード
 export interface LifetimeYearlyRecord {
-  age: number; // primaryの年齢
-  spouseAge: number | null; // 夫婦時の配偶者年齢（他界後はnull）
-  isSpouseDeceased: boolean; // 配偶者が他界しているか（死別単身期）
-  isPrimaryDeceased: boolean; // primaryが他界しているか
-  householdGrossAnnual: number; // 世帯課税判定年収【額面】（遺族年金は非課税のため含まず）
-  primaryGrossAnnual: number; // 夫の課税年収（年金+給与）【額面】
-  spouseGrossAnnual: number; // 妻の課税年収（年金+給与）【額面】
-  pensionGrossAnnual: number; // 自身の老齢年金年額【額面】
-  survivorPensionMonthly: number; // 遺族厚生年金【非課税】
-  salaryGrossAnnual: number; // 就労給与年額【額面】
-  nisaAnnual: number; // NISA取崩し【手取り】
-  netDisposableIncomeMonthly: number; // 個人手取り生活費概算（万円/月）
-  householdNetDisposableIncomeMonthly: number; // 世帯合計手取り生活費概算（万円/月）
-  isTaxFree: boolean; // 住民税非課税判定
-  zone: ZoneType; // ゾーン A / B / C
-  careRate: 1 | 2 | 3; // 介護負担割合
-  medicalRate: 1 | 2 | 3; // 医療負担割合
-  hasNursingHomeFoodSubsidy: boolean; // 特養補足給付
-  highCostCareLimitMonthly: number; // 高額介護上限
-  highCostMedicalLimitMonthly: number; // 高額療養上限
+  age: number;
+  spouseAge: number | null;
+  isSpouseDeceased: boolean;
+  isPrimaryDeceased: boolean;
+  householdGrossAnnual: number;
+  primaryGrossAnnual: number;
+  spouseGrossAnnual: number;
+  pensionGrossAnnual: number;
+  survivorPensionMonthly: number;
+  salaryGrossAnnual: number;
+  netDisposableIncomeMonthly: number;
+  householdNetDisposableIncomeMonthly: number;
+  isTaxFree: boolean;
+  zone: ZoneType;
+  careRate: 1 | 2 | 3;
+  medicalRate: 1 | 2 | 3;
+  hasNursingHomeFoodSubsidy: boolean;
+  highCostCareLimitMonthly: number;
+  highCostMedicalLimitMonthly: number;
   keyMilestone?: string;
+}
+
+// 第2ステップ 動的ライフプラン年次キャッシュフローレコード
+export interface LifePlanYearRecord {
+  year: number;
+  age: number;
+  spouseAge: number | null;
+  isSpouseDeceased: boolean;
+  isPrimaryDeceased: boolean;
+  
+  // 収入詳細（手取り・万円）
+  primaryWorkNet: number;
+  spouseWorkNet: number;
+  primarySeveranceNet: number;
+  spouseSeveranceNet: number;
+  primaryPensionNet: number;
+  spousePensionNet: number;
+  survivorPensionNet: number;
+  idecoNet: number;
+  temporaryIncomeTotal: number;
+  totalNetIncome: number;
+
+  // 支出詳細（インフレ調整後・万円）
+  housingExpense: number;
+  baseLivingExpense: number;
+  activeLeisureExpense: number;
+  unforeseenExpense: number;
+  largeLeisureExpense: number;
+  specialPeriodExpense: number;
+  totalExpense: number;
+
+  annualCashFlow: number;
+
+  // バケット残高（年末残高・万円）
+  bucket1Balance: number;
+  bucket2Balance: number;
+  bucket3Balance: number;
+  totalAssets: number;
+
+  eventLabel?: string;
+  isDeficit: boolean;
 }
