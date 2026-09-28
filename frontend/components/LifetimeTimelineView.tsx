@@ -398,16 +398,16 @@ export const LifetimeTimelineView: React.FC<LifetimeTimelineViewProps> = ({ stat
             </div>
           </div>
 
-          {/* ビジュアル・タイムラインバーチャート */}
-          <div className="relative pt-8 pb-2 overflow-x-auto w-full">
+          {/* ビジュアル・タイムラインバーチャート（上部余白 pt-24 を確保し、最前面ツールチップが切れないように修正） */}
+          <div className="relative pt-24 pb-3 overflow-x-auto w-full">
             {/* 非課税壁ライン */}
             <div
               className="absolute left-0 right-0 border-t-2 border-dashed border-emerald-500 pointer-events-none z-10"
               style={{
-                bottom: `${( (state.householdType === 'single' ? 155 : 211) / maxIncome ) * 160 + 36}px`,
+                bottom: `${( (state.householdType === 'single' ? 155 : 211) / maxIncome ) * 160 + 24}px`,
               }}
             >
-              <span className="absolute -top-3 left-2 text-[10px] font-bold text-emerald-800 bg-emerald-100/90 px-1.5 py-0.2 rounded">
+              <span className="absolute -top-3 left-2 text-[10px] font-bold text-emerald-800 bg-emerald-100/90 px-1.5 py-0.2 rounded shadow-2xs">
                 非課税の壁（単身155万 / 夫婦健在211万）
               </span>
             </div>
@@ -416,16 +416,16 @@ export const LifetimeTimelineView: React.FC<LifetimeTimelineViewProps> = ({ stat
             <div
               className="absolute left-0 right-0 border-t-2 border-dashed border-rose-400 pointer-events-none z-10"
               style={{
-                bottom: `${( (state.householdType === 'single' ? 280 : 346) / maxIncome ) * 160 + 36}px`,
+                bottom: `${( (state.householdType === 'single' ? 280 : 346) / maxIncome ) * 160 + 24}px`,
               }}
             >
-              <span className="absolute -top-3 right-2 text-[10px] font-bold text-rose-800 bg-rose-100/90 px-1.5 py-0.2 rounded">
+              <span className="absolute -top-3 right-2 text-[10px] font-bold text-rose-800 bg-rose-100/90 px-1.5 py-0.2 rounded shadow-2xs">
                 介護2割の壁（単身280万 / 夫婦健在346万）
               </span>
             </div>
 
             {/* チャート本体バー列 */}
-            <div className="flex items-end gap-1 sm:gap-1.5 min-w-[720px] h-52 px-2 border-b border-slate-300 relative">
+            <div className="flex items-end gap-1 sm:gap-1.5 min-w-[720px] h-60 px-2 border-b border-slate-300 relative">
               {timeline.map((item, index) => {
                 const totalBarHeight = Math.max(8, Math.min(160, (item.householdGrossAnnual / maxIncome) * 160));
                 const isTargetAge = item.age === state.targetAgeYears;
@@ -457,18 +457,28 @@ export const LifetimeTimelineView: React.FC<LifetimeTimelineViewProps> = ({ stat
                       </div>
                     )}
 
-                    {/* ツールチップ */}
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-16 z-30 pointer-events-none bg-slate-900 text-white text-[10px] py-1.5 px-2.5 rounded whitespace-nowrap shadow-md">
-                      {item.age}歳: {item.isSpouseDeceased ? '[配偶者他界後]' : '[夫婦存命期]'}
-                      <br />
-                      世帯年収: {item.householdGrossAnnual}万円
-                      {!item.isSpouseDeceased && isCouple && (
-                        <span> ({state.primary.name}{item.primaryGrossAnnual}万 / {state.spouse.name}{item.spouseGrossAnnual}万)</span>
-                      )}
-                      <br />
-                      手取: 個人{item.netDisposableIncomeMonthly}万
-                      {item.survivorPensionMonthly > 0 ? ` (うち遺族年金+${item.survivorPensionMonthly}万)` : ''}
-                      {!item.isSpouseDeceased && isCouple ? ` / 世帯計${item.householdNetDisposableIncomeMonthly}万` : ''}
+                    {/* 最前面・上部隠れ防止ポップアップツールチップ */}
+                    <div
+                      className="opacity-0 group-hover:opacity-100 transition-opacity duration-150 absolute -top-20 left-1/2 -translate-x-1/2 z-50 pointer-events-none bg-slate-900/95 text-white text-[10px] py-1.5 px-2.5 rounded-lg whitespace-nowrap shadow-xl border border-slate-700/80 backdrop-blur-xs flex flex-col items-center leading-tight"
+                    >
+                      <span className="font-bold text-amber-300 text-[11px]">
+                        {item.age}歳 {item.isSpouseDeceased ? '[配偶者他界後]' : '[夫婦存命期]'}
+                      </span>
+                      <span className="text-white mt-0.5">
+                        世帯年収: <strong className="font-mono text-white">{item.householdGrossAnnual}万円</strong>
+                        {!item.isSpouseDeceased && isCouple && (
+                          <span className="text-slate-300 text-[9px] ml-1">
+                            ({state.primary.name}{item.primaryGrossAnnual}万 / {state.spouse.name}{item.spouseGrossAnnual}万)
+                          </span>
+                        )}
+                      </span>
+                      <span className="text-sky-300 font-mono mt-0.5">
+                        手取: 個人{item.netDisposableIncomeMonthly}万
+                        {item.survivorPensionMonthly > 0 ? ` (うち遺族年金+${item.survivorPensionMonthly}万)` : ''}
+                        {!item.isSpouseDeceased && isCouple ? ` / 世帯計${item.householdNetDisposableIncomeMonthly}万` : ''}
+                      </span>
+                      {/* 下向き矢印ヒゲ */}
+                      <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 border-r border-b border-slate-700/80 rotate-45"></span>
                     </div>
 
                     {/* 選択年齢ピン */}
@@ -628,7 +638,7 @@ export const LifetimeTimelineView: React.FC<LifetimeTimelineViewProps> = ({ stat
                             : 'hover:bg-slate-50'
                         }`}
                       >
-                        <td className="py-2 px-3 font-bold font-sans flex items-center gap-1.5">
+                        <td className="py-2 px-3 font-sans font-bold flex items-center gap-1.5">
                           <span className="text-slate-800">{row.age}歳</span>
                           {row.spouseAge !== null && (
                             <span className="text-[10px] text-slate-400">({row.spouseAge}歳)</span>

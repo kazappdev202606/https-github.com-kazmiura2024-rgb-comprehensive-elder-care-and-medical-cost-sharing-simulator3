@@ -15,12 +15,11 @@ import {
   ChevronLeft,
   Plus,
   Trash2,
-  Calendar,
   Briefcase,
-  HelpCircle,
-  Clock,
+  Award,
+  HeartPulse,
   Sparkles,
-  Award
+  Clock
 } from 'lucide-react';
 
 interface LifePlanSidebarProps {
@@ -41,20 +40,61 @@ export const LifePlanSidebar: React.FC<LifePlanSidebarProps> = ({
   // 編集中のタブ（本人 / 配偶者）
   const [roleTab, setRoleTab] = useState<'primary' | 'spouse'>('primary');
 
-  // ヘルパー：PersonIncomeStrategy 更新
+  // ヘルパー：PersonIncomeStrategy 更新（第1ステップの primary / spouse とも完全同期）
   const handleStrategyChange = <K extends keyof PersonIncomeStrategy>(
     role: 'primary' | 'spouse',
     key: K,
     val: PersonIncomeStrategy[K]
   ) => {
+    onChange((prev) => {
+      const updatedStrategy = {
+        ...prev.lifePlan[role === 'primary' ? 'primaryStrategy' : 'spouseStrategy'],
+        [key]: val,
+      };
+
+      // 第1ステップ側の PersonProfile も同時に双方向同期
+      const updatedPerson = { ...prev[role] };
+
+      if (key === 'careerRetireAge') {
+        updatedPerson.careerRetireAge = val as number;
+      } else if (key === 'rehireRetireAge') {
+        updatedPerson.rehireRetireAge = val as number;
+      } else if (key === 'pensionStartAge') {
+        updatedPerson.pensionStartAge = val as number;
+      } else if (key === 'pensionAge65GrossAnnual') {
+        // 年額から月額へ反映
+        const monthly = Math.round(((val as number) / 12) * 10) / 10;
+        updatedPerson.pensionAge65Monthly = monthly;
+        // 基礎年金と厚生年金の配分を維持または按分
+        const currentTotal = updatedPerson.pensionBasicMonthly + updatedPerson.pensionEmployeesMonthly;
+        if (currentTotal > 0) {
+          const ratioBasic = updatedPerson.pensionBasicMonthly / currentTotal;
+          updatedPerson.pensionBasicMonthly = Math.round(monthly * ratioBasic * 10) / 10;
+          updatedPerson.pensionEmployeesMonthly = Math.round((monthly - updatedPerson.pensionBasicMonthly) * 10) / 10;
+        } else {
+          updatedPerson.pensionBasicMonthly = 6.8;
+          updatedPerson.pensionEmployeesMonthly = Math.max(0, Math.round((monthly - 6.8) * 10) / 10);
+        }
+      }
+
+      return {
+        ...prev,
+        [role]: updatedPerson,
+        lifePlan: {
+          ...prev.lifePlan,
+          [role === 'primary' ? 'primaryStrategy' : 'spouseStrategy']: updatedStrategy,
+        },
+      };
+    });
+  };
+
+  // 寿命想定の変更（第1ステップと第2ステップの両方に完全同期）
+  const handleLifeExpectancyChange = (role: 'primary' | 'spouse', value: number) => {
     onChange((prev) => ({
       ...prev,
-      lifePlan: {
-        ...prev.lifePlan,
-        [role === 'primary' ? 'primaryStrategy' : 'spouseStrategy']: {
-          ...prev.lifePlan[role === 'primary' ? 'primaryStrategy' : 'spouseStrategy'],
-          [key]: val,
-        },
+      [role]: {
+        ...prev[role],
+        lifeExpectancyYears: value,
       },
     }));
   };
@@ -193,7 +233,7 @@ export const LifePlanSidebar: React.FC<LifePlanSidebarProps> = ({
           <span className="text-xs font-black text-slate-800 tracking-tight block">
             第２ステップ：詳細シミュレーション項目
           </span>
-          <span className="text-[10px] text-slate-500">動的ライフプラン表にリアルタイム連動</span>
+          <span className="text-[10px] text-slate-500">第1ステップと双方向リアルタイム同期中</span>
         </div>
         {onToggleCollapse && (
           <button
@@ -210,13 +250,13 @@ export const LifePlanSidebar: React.FC<LifePlanSidebarProps> = ({
       {/* ─────────────────────────────────────── */}
       {/* 1. 基本情報＆経済環境 */}
       {/* ─────────────────────────────────────── */}
-      <div className="border border-slate-200 rounded-xl p-3.5 bg-slate-50/70 space-y-3">
+      <div className="border border-slate-200 rounded-xl p-3.5 bg-slate-50/70 space-y-3.5">
         <div className="flex items-center justify-between">
           <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
             <Percent className="w-3.5 h-3.5 text-indigo-600" />
             1. 基本情報＆経済環境
           </span>
-          <span className="text-[10px] text-slate-400">マニュアル推奨</span>
+          <span className="text-[10px] text-slate-400">マニュアル推奨値</span>
         </div>
 
         {/* 年齢設定（夫婦世帯なら両方） */}
@@ -268,6 +308,57 @@ export const LifePlanSidebar: React.FC<LifePlanSidebarProps> = ({
           ) : (
             <div className="bg-slate-100 p-2 rounded-lg text-[10px] text-slate-400 flex items-center justify-center">
               単身世帯設定
+            </div>
+          )}
+        </div>
+
+        {/* 寿命想定の設定（第1・第2ステップ双方向完全連動） */}
+        <div className="bg-white p-2.5 rounded-lg border border-slate-200 space-y-2.5">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1">
+              <HeartPulse className="w-3.5 h-3.5 text-rose-600" />
+              寿命想定の設定（65〜120歳）
+            </span>
+            <span className="text-[9px] text-slate-400">第1ステップと共通連動</span>
+          </div>
+
+          {/* 本人の想定寿命 */}
+          <div>
+            <div className="flex justify-between items-center text-xs mb-1">
+              <span className="text-[11px] text-slate-600">{state.primary.name}の想定寿命:</span>
+              <span className="font-bold font-mono text-sky-700 bg-sky-50 px-2 py-0.2 rounded border border-sky-200">
+                {state.primary.lifeExpectancyYears} 歳
+              </span>
+            </div>
+            <input
+              type="range"
+              min={65}
+              max={120}
+              step={1}
+              value={state.primary.lifeExpectancyYears}
+              onChange={(e) => handleLifeExpectancyChange('primary', parseInt(e.target.value) || 100)}
+              className="w-full accent-sky-600 h-1.5 bg-slate-200 rounded cursor-pointer"
+            />
+          </div>
+
+          {/* 配偶者の想定寿命 */}
+          {isCouple && (
+            <div className="pt-1.5 border-t border-slate-100">
+              <div className="flex justify-between items-center text-xs mb-1">
+                <span className="text-[11px] text-slate-600">{state.spouse.name}の想定寿命:</span>
+                <span className="font-bold font-mono text-rose-700 bg-rose-50 px-2 py-0.2 rounded border border-rose-200">
+                  {state.spouse.lifeExpectancyYears} 歳
+                </span>
+              </div>
+              <input
+                type="range"
+                min={65}
+                max={120}
+                step={1}
+                value={state.spouse.lifeExpectancyYears}
+                onChange={(e) => handleLifeExpectancyChange('spouse', parseInt(e.target.value) || 100)}
+                className="w-full accent-rose-600 h-1.5 bg-slate-200 rounded cursor-pointer"
+              />
             </div>
           )}
         </div>

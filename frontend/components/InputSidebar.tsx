@@ -17,7 +17,7 @@ export const InputSidebar: React.FC<InputSidebarProps> = ({
 }) => {
   const isCouple = state.householdType === 'couple';
 
-  // プロファイル項目変更ハンドラ（role: 'primary' または 'spouse' を直接指定）
+  // プロファイル項目変更ハンドラ（第2ステップの lifePlan.primaryStrategy / spouseStrategy とも完全双方向同期）
   const handleFieldChange = <K extends keyof PersonProfile>(
     role: 'primary' | 'spouse',
     key: K,
@@ -35,11 +35,40 @@ export const InputSidebar: React.FC<InputSidebarProps> = ({
         updatedProfile.pensionAge65Monthly = Math.round((basic + emp) * 10) / 10;
       }
 
+      // 第2ステップの strategy も同時に更新
+      const targetStrategyKey = role === 'primary' ? 'primaryStrategy' : 'spouseStrategy';
+      const updatedStrategy = { ...prev.lifePlan[targetStrategyKey] };
+
+      if (key === 'careerRetireAge') {
+        updatedStrategy.careerRetireAge = value as number;
+      } else if (key === 'rehireRetireAge') {
+        updatedStrategy.rehireRetireAge = value as number;
+      } else if (key === 'pensionStartAge') {
+        updatedStrategy.pensionStartAge = value as number;
+      } else if (key === 'pensionBasicMonthly' || key === 'pensionEmployeesMonthly') {
+        updatedStrategy.pensionAge65GrossAnnual = Math.round(updatedProfile.pensionAge65Monthly * 12 * 10) / 10;
+      }
+
       return {
         ...prev,
         [role]: updatedProfile,
+        lifePlan: {
+          ...prev.lifePlan,
+          [targetStrategyKey]: updatedStrategy,
+        },
       };
     });
+  };
+
+  // 寿命想定の変更（第2ステップとも完全同期）
+  const handleLifeExpectancyChange = (role: 'primary' | 'spouse', value: number) => {
+    onChange((prev) => ({
+      ...prev,
+      [role]: {
+        ...prev[role],
+        lifeExpectancyYears: value,
+      },
+    }));
   };
 
   // 夫婦の月齢差を算出
@@ -52,7 +81,7 @@ export const InputSidebar: React.FC<InputSidebarProps> = ({
       ? `配偶者が ${Math.floor(diffMonths / 12)}歳${Math.abs(diffMonths % 12)}ヶ月 年上`
       : `ご本人が ${Math.floor(Math.abs(diffMonths) / 12)}歳${Math.abs(diffMonths % 12)}ヶ月 年上`;
 
-  // 年金・就労入力コンポーネント（再利用・本人と配偶者両方に展開）
+  // 年金・就労入力コンポーネント（本人と配偶者両方に展開）
   const renderPersonForm = (role: 'primary' | 'spouse', profile: PersonProfile, badgeColor: string) => {
     return (
       <div className={`p-3.5 rounded-xl border space-y-3.5 ${role === 'primary' ? 'bg-sky-50/40 border-sky-200' : 'bg-rose-50/40 border-rose-200'}`}>
@@ -351,7 +380,7 @@ export const InputSidebar: React.FC<InputSidebarProps> = ({
             <HeartPulse className="w-4 h-4 text-rose-600" />
             寿命想定の設定（65〜120歳）
           </span>
-          <span className="text-[10px] text-slate-400">他界後の遺族年金を自動判定</span>
+          <span className="text-[10px] text-slate-400">第2ステップと相互連動</span>
         </div>
 
         {/* ご本人の寿命想定 */}
@@ -368,13 +397,7 @@ export const InputSidebar: React.FC<InputSidebarProps> = ({
             max={120}
             step={1}
             value={state.primary.lifeExpectancyYears}
-            onChange={(e) => {
-              const val = parseInt(e.target.value) || 100;
-              onChange((prev) => ({
-                ...prev,
-                primary: { ...prev.primary, lifeExpectancyYears: val },
-              }));
-            }}
+            onChange={(e) => handleLifeExpectancyChange('primary', parseInt(e.target.value) || 100)}
             className="w-full accent-sky-600 h-1.5 bg-slate-200 rounded cursor-pointer"
           />
         </div>
@@ -394,13 +417,7 @@ export const InputSidebar: React.FC<InputSidebarProps> = ({
               max={120}
               step={1}
               value={state.spouse.lifeExpectancyYears}
-              onChange={(e) => {
-                const val = parseInt(e.target.value) || 100;
-                onChange((prev) => ({
-                  ...prev,
-                  spouse: { ...prev.spouse, lifeExpectancyYears: val },
-                }));
-              }}
+              onChange={(e) => handleLifeExpectancyChange('spouse', parseInt(e.target.value) || 100)}
               className="w-full accent-rose-600 h-1.5 bg-slate-200 rounded cursor-pointer"
             />
           </div>

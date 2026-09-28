@@ -7,6 +7,8 @@ export function buildLifePlanTimeline(state: SimulatorState): LifePlanYearRecord
 
   const currentYear = new Date().getFullYear();
   const startAge = state.primary.ageYears;
+
+  // 終了年齢はご本人・配偶者の「寿命想定」の長い方を基準に決定（最大120歳）
   const endAge = isSingle
     ? Math.min(120, state.primary.lifeExpectancyYears)
     : Math.min(120, Math.max(state.primary.lifeExpectancyYears, state.spouse.lifeExpectancyYears));
@@ -44,6 +46,7 @@ export function buildLifePlanTimeline(state: SimulatorState): LifePlanYearRecord
     const spouseTargetMonths = primaryTargetMonths + diffMonths;
     const spouseAgeNumber = Math.floor(spouseTargetMonths / 12);
 
+    // ★重要: ご本人・配偶者の寿命想定に基づく厳密な他界フラグ判定
     const isPrimaryDeceased = age >= state.primary.lifeExpectancyYears;
     const isSpouseDeceased = !isSingle && spouseAgeNumber >= state.spouse.lifeExpectancyYears;
 
@@ -60,7 +63,7 @@ export function buildLifePlanTimeline(state: SimulatorState): LifePlanYearRecord
     let idecoNet = 0;
     let temporaryIncomeTotal = 0;
 
-    // ■ ご本人収入
+    // ■ ご本人収入（寿命まで生存している期間のみ）
     if (!isPrimaryDeceased) {
       const pStrat = cfg.primaryStrategy;
 
@@ -93,7 +96,7 @@ export function buildLifePlanTimeline(state: SimulatorState): LifePlanYearRecord
       }
     }
 
-    // ■ 配偶者収入
+    // ■ 配偶者収入（寿命まで生存している期間のみ）
     if (!isSingle && !isSpouseDeceased) {
       const sStrat = cfg.spouseStrategy;
 
@@ -126,7 +129,7 @@ export function buildLifePlanTimeline(state: SimulatorState): LifePlanYearRecord
       }
     }
 
-    // ■ 遺族厚生年金（配偶者が先に他界した場合・全額非課税）
+    // ■ 遺族厚生年金（配偶者が先に他界した場合・全額非課税で手取りに加算）
     if (!isSingle && isSpouseDeceased && !isPrimaryDeceased) {
       const survivorMonthly = calculateSurvivorPensionMonthly(state.spouse, state.primary, age);
       survivorPensionNet = Math.round(survivorMonthly * 12 * 10) / 10;
@@ -227,11 +230,11 @@ export function buildLifePlanTimeline(state: SimulatorState): LifePlanYearRecord
 
     const totalAssets = Math.round((currentBucket1 + currentBucket2 + currentBucket3) * 10) / 10;
 
-    // イベントラベル
+    // イベントラベル（寿命や他界を含むマイルストーン）
     let eventLabel: string | undefined = undefined;
     if (primarySeveranceNet > 0 || spouseSeveranceNet > 0) {
       eventLabel = '🎉 退職金受取';
-    } else if (age === cfg.primaryStrategy.pensionStartAge) {
+    } else if (age === cfg.primaryStrategy.pensionStartAge && !isPrimaryDeceased) {
       eventLabel = `65歳：${state.primary.name}年金受給開始`;
     } else if (age === cfg.primaryStrategy.idecoReceiveAge && cfg.primaryStrategy.idecoNetTotal > 0) {
       eventLabel = '💰 iDeCo受給';
@@ -239,6 +242,8 @@ export function buildLifePlanTimeline(state: SimulatorState): LifePlanYearRecord
       eventLabel = `✈️ ${matchedLargeLeisure.map((i) => i.title).join(' / ')}`;
     } else if (!isSingle && isSpouseDeceased && spouseAgeNumber === state.spouse.lifeExpectancyYears) {
       eventLabel = `🕊️ 配偶者が${state.spouse.lifeExpectancyYears}歳で他界（遺族年金開始）`;
+    } else if (!isSingle && isPrimaryDeceased && age === state.primary.lifeExpectancyYears) {
+      eventLabel = `🕊️ ご本人が${state.primary.lifeExpectancyYears}歳で他界`;
     }
 
     records.push({
