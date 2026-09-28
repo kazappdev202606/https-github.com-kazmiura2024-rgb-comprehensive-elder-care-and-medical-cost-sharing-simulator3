@@ -125,7 +125,7 @@ export function evaluatePersonSituation(
 
     const otherPensionNet = Math.round(otherPensionMonthly * 0.85 * 10) / 10;
     const otherSalaryNet = Math.round(otherSalaryMonthly * 0.8 * 10) / 10;
-    spouseNetMonthly = otherPensionNet + otherSalaryNet + otherProfile.nisaMonthlyDrawdown;
+    spouseNetMonthly = otherPensionNet + otherSalaryNet;
   }
 
   // 6. 住民税非課税判定
@@ -210,10 +210,10 @@ export function evaluatePersonSituation(
     zone = 'B';
   }
 
-  // 12. 手取り生活費の合算概算
+  // 12. 手取り生活費の合算概算（年金手取＋遺族年金＋給料手取）
   const salaryNetMonthly = Math.round(salaryGrossMonthly * 0.8 * 10) / 10;
   const netDisposableIncomeMonthly = !isDeceased
-    ? Math.round((pensionNetMonthly + survivorPensionMonthly + salaryNetMonthly + profile.nisaMonthlyDrawdown) * 10) / 10
+    ? Math.round((pensionNetMonthly + survivorPensionMonthly + salaryNetMonthly) * 10) / 10
     : 0;
 
   const householdNetDisposableIncomeMonthly = isEffectiveSingle
@@ -237,7 +237,6 @@ export function evaluatePersonSituation(
     survivorPensionAnnual,
     salaryGrossAnnual: Math.round(salaryGrossAnnual * 10) / 10,
     salaryGrossMonthly: Math.round(salaryGrossMonthly * 10) / 10,
-    nisaMonthly: profile.nisaMonthlyDrawdown,
     totalGrossIncomeAnnual: Math.round(totalGrossIncomeAnnual * 10) / 10,
     householdGrossAnnual: Math.round(householdGrossAnnual * 10) / 10,
     netDisposableIncomeMonthly,
@@ -324,7 +323,7 @@ export function buildMatrix(state: SimulatorState, forcedPerspective?: 'primary'
 }
 
 /**
- * 現在年齢（または60歳）からご本人・配偶者の寿命の長い方（最大120歳）までの生涯推移タイムラインを生成
+ * 生涯推移タイムラインの生成
  */
 export function buildLifetimeTimeline(state: SimulatorState): LifetimeYearlyRecord[] {
   const isSingle = state.householdType === 'single';
@@ -423,7 +422,6 @@ export function buildLifetimeTimeline(state: SimulatorState): LifetimeYearlyReco
       pensionGrossAnnual: calc.pensionGrossAnnual,
       survivorPensionMonthly: calc.survivorPensionMonthly,
       salaryGrossAnnual: calc.salaryGrossAnnual,
-      nisaAnnual: calc.nisaMonthly * 12,
       netDisposableIncomeMonthly: calc.netDisposableIncomeMonthly,
       householdNetDisposableIncomeMonthly: calc.householdNetDisposableIncomeMonthly,
       isTaxFree: calc.isTaxFree,
