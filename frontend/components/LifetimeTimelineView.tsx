@@ -6,10 +6,7 @@ import {
   SlidersHorizontal,
   Table,
   BarChart3,
-  HeartHandshake,
-  Calendar,
-  Sparkles,
-  Users
+  HeartHandshake
 } from 'lucide-react';
 
 interface LifetimeTimelineViewProps {
