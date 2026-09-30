@@ -1,12 +1,14 @@
 import React from 'react';
 import { SimulatorState, PersonProfile } from '../types';
-import { User, Users, ChevronLeft, Split, HeartPulse, Briefcase, Award } from 'lucide-react';
+import { HelpTopic } from './HelpExplanationModal';
+import { User, Users, ChevronLeft, Split, HeartPulse, Briefcase, Award, HelpCircle } from 'lucide-react';
 
 interface InputSidebarProps {
   state: SimulatorState;
   onChange: (updater: (prev: SimulatorState) => SimulatorState) => void;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
+  onOpenHelp?: (topic: HelpTopic) => void;
 }
 
 export const InputSidebar: React.FC<InputSidebarProps> = ({
@@ -14,10 +16,11 @@ export const InputSidebar: React.FC<InputSidebarProps> = ({
   onChange,
   isCollapsed,
   onToggleCollapse,
+  onOpenHelp,
 }) => {
   const isCouple = state.householdType === 'couple';
 
-  // プロファイル項目変更ハンドラ（第2ステップの lifePlan.primaryStrategy / spouseStrategy とも完全双方向同期）
+  // プロファイル項目変更ハンドラ
   const handleFieldChange = <K extends keyof PersonProfile>(
     role: 'primary' | 'spouse',
     key: K,
@@ -35,7 +38,6 @@ export const InputSidebar: React.FC<InputSidebarProps> = ({
         updatedProfile.pensionAge65Monthly = Math.round((basic + emp) * 10) / 10;
       }
 
-      // 第2ステップの strategy も同時に更新
       const targetStrategyKey = role === 'primary' ? 'primaryStrategy' : 'spouseStrategy';
       const updatedStrategy = { ...prev.lifePlan[targetStrategyKey] };
 
@@ -60,7 +62,6 @@ export const InputSidebar: React.FC<InputSidebarProps> = ({
     });
   };
 
-  // 寿命想定の変更（第2ステップとも完全同期）
   const handleLifeExpectancyChange = (role: 'primary' | 'spouse', value: number) => {
     onChange((prev) => ({
       ...prev,
@@ -71,7 +72,6 @@ export const InputSidebar: React.FC<InputSidebarProps> = ({
     }));
   };
 
-  // 夫婦の月齢差を算出
   const diffMonths =
     state.spouse.ageYears * 12 + state.spouse.ageMonths - (state.primary.ageYears * 12 + state.primary.ageMonths);
   const diffYearsFormatted =
@@ -80,6 +80,13 @@ export const InputSidebar: React.FC<InputSidebarProps> = ({
       : diffMonths > 0
       ? `配偶者が ${Math.floor(diffMonths / 12)}歳${Math.abs(diffMonths % 12)}ヶ月 年上`
       : `ご本人が ${Math.floor(Math.abs(diffMonths) / 12)}歳${Math.abs(diffMonths % 12)}ヶ月 年上`;
+
+  // ヘルプ起動ヘルパー
+  const triggerHelp = (title: string, category: string, whatIsIt: string, howToInput: string, point: string, referenceValue?: string) => {
+    if (onOpenHelp) {
+      onOpenHelp({ title, category, whatIsIt, howToInput, point, referenceValue });
+    }
+  };
 
   // 年金・就労入力コンポーネント（本人と配偶者両方に展開）
   const renderPersonForm = (role: 'primary' | 'spouse', profile: PersonProfile, badgeColor: string) => {
@@ -101,6 +108,22 @@ export const InputSidebar: React.FC<InputSidebarProps> = ({
             <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
               <Award className="w-3.5 h-3.5 text-sky-600" />
               年金定期便見込額 (65歳基準)【額面】
+              <button
+                type="button"
+                onClick={() =>
+                  triggerHelp(
+                    '公的年金定期便見込額（65歳基準）',
+                    '年金設定',
+                    '日本年金機構から届く「ねんきん定期便」に記載されている、65歳から受給開始した場合の年金額面（総支給額）です。税金や社会保険料が引かれる前の金額です。',
+                    'ねんきん定期便の「老齢基礎年金」欄と「老齢厚生年金」欄に記載されている月額または年額÷12の数値をそれぞれ入力してください。基礎年金＋厚生年金の合計が自動計算されます。',
+                    '自営業・フリーランスの方は国民年金（基礎年金）のみ、会社員・公務員は両方を受給します。遺族厚生年金の計算には「厚生年金」の額が直接影響します。',
+                    '基礎約6.8万円 / 厚生平均8〜12万円'
+                  )
+                }
+                className="text-slate-400 hover:text-sky-600"
+              >
+                <HelpCircle className="w-3.5 h-3.5" />
+              </button>
             </span>
             <span className="text-[11px] font-black text-slate-900 font-mono bg-slate-50 px-2 py-0.2 rounded border border-slate-300">
               合計 {profile.pensionAge65Monthly} 万/月
@@ -146,7 +169,25 @@ export const InputSidebar: React.FC<InputSidebarProps> = ({
         {/* 年金受給開始年齢 */}
         <div className="bg-white p-2.5 rounded-lg border border-slate-200 shadow-2xs">
           <div className="flex items-center justify-between">
-            <label className="text-[11px] font-semibold text-slate-700">年金受給開始年齢</label>
+            <span className="text-[11px] font-semibold text-slate-700 flex items-center gap-1">
+              年金受給開始年齢（繰上げ・繰下げ）
+              <button
+                type="button"
+                onClick={() =>
+                  triggerHelp(
+                    '年金受給開始年齢（繰上げ・繰下げ）',
+                    '年金受給時期',
+                    '公的年金を受け取り始める年齢（60〜75歳）です。標準は65歳です。',
+                    'スライダーを動かして希望する受給開始年齢を選択してください。65歳より早くもらう（繰上げ）と1月あたり-0.4%（最大-24%）減額、遅くもらう（繰下げ）と1月あたり+0.7%（70歳で+42%、75歳で+84%）生涯増額されます。',
+                    '繰り下げると生涯増額されますが、額面が増えすぎると医療・介護の自己負担が1割から2〜3割へ跳ね上がる「制度の壁」に突入するリスクがあります。',
+                    '65歳（標準）〜70歳'
+                  )
+                }
+                className="text-slate-400 hover:text-sky-600"
+              >
+                <HelpCircle className="w-3.5 h-3.5" />
+              </button>
+            </span>
             <span className="text-xs font-extrabold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.2 rounded font-mono">
               {profile.pensionStartAge} 歳
             </span>
@@ -176,10 +217,28 @@ export const InputSidebar: React.FC<InputSidebarProps> = ({
 
         {/* 2段階の就労リタイア設定 */}
         <div className="bg-white border border-slate-200 rounded-lg p-2.5 space-y-2 shadow-2xs">
-          <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
-            <Briefcase className="w-3.5 h-3.5 text-slate-600" />
-            2段階の就労・リタイア設定
-          </span>
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
+              <Briefcase className="w-3.5 h-3.5 text-slate-600" />
+              2段階の就労・リタイア設定
+            </span>
+            <button
+              type="button"
+              onClick={() =>
+                triggerHelp(
+                  '2段階の就労リタイア計画',
+                  '就労計画',
+                  '定年までの「正職員・現役期」と、定年後の「再雇用・嘱託・パート期」の2段階で引退時期と月給を設定する仕組みです。',
+                  '①正職引退年齢（例:60歳や65歳）と、賞与年額÷12を含む額面月給を入力します。\n②再雇用やパートを完全に卒業する年齢（例:65歳や70歳）と、その期間の額面月給を入力します。',
+                  '公的な所得判定はすべて手取りではなく【額面年収】で行われます。給与収入が加算されると介護2割負担の壁（単身280万/夫婦346万）を超えやすくなるため、就労時間や日数の調整が重要になります。',
+                  '正職60〜65歳 / 再雇用65〜70歳'
+                )
+              }
+              className="text-slate-400 hover:text-sky-600"
+            >
+              <HelpCircle className="w-3.5 h-3.5" />
+            </button>
+          </div>
 
           {/* ① 正職 */}
           <div className="space-y-1">
@@ -268,9 +327,27 @@ export const InputSidebar: React.FC<InputSidebarProps> = ({
 
       {/* 1. 世帯構成の切替（単身世帯・夫婦世帯の2種） */}
       <div>
-        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-          1. 世帯構成を選択
-        </label>
+        <div className="flex items-center justify-between mb-2">
+          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
+            1. 世帯構成を選択
+          </label>
+          <button
+            type="button"
+            onClick={() =>
+              triggerHelp(
+                '世帯構成の選択',
+                '基本設定',
+                'ご自身1人の「単身世帯」か、パートナーと暮らす「夫婦世帯」かを選択します。',
+                'ボタンをクリックして該当する世帯形態を選んでください。夫婦世帯の場合は、ご本人と配偶者の年齢・年金・就労・寿命想定をそれぞれ個別に精密シミュレーションできます。',
+                '住民税非課税の壁は、単身世帯で155万円以下、夫婦世帯で合算211万円以下と大きく異なります。',
+                '単身世帯 または 夫婦世帯'
+              )
+            }
+            className="text-slate-400 hover:text-sky-600"
+          >
+            <HelpCircle className="w-3.5 h-3.5" />
+          </button>
+        </div>
         <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
@@ -300,7 +377,7 @@ export const InputSidebar: React.FC<InputSidebarProps> = ({
           </button>
         </div>
 
-        {/* 夫婦の場合: 視点切替タブ（ご本人 / 配偶者 / 夫婦両方同時） */}
+        {/* 夫婦の場合: 視点切替タブ */}
         {isCouple && (
           <div className="mt-3 p-2.5 bg-slate-50 rounded-xl border border-slate-200">
             <div className="flex items-center justify-between text-xs mb-1.5">
@@ -345,8 +422,24 @@ export const InputSidebar: React.FC<InputSidebarProps> = ({
       {/* 2. 検証ターゲット年齢スライダー */}
       <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
         <div className="flex items-center justify-between mb-1.5">
-          <label className="font-bold text-slate-700 text-xs">
+          <label className="font-bold text-slate-700 text-xs flex items-center gap-1">
             シミュレーション検証年齢
+            <button
+              type="button"
+              onClick={() =>
+                triggerHelp(
+                  'シミュレーション検証年齢',
+                  '基本設定',
+                  'マトリクスや判定バナーで、「ご本人が何歳の時点の状態を検証するか」を指定するスライダーです。',
+                  'スライダーを左右に動かしてください。65歳（年金受給本番）、70歳（前期高齢者・医療2割）、75歳（後期高齢者・原則1割）などの制度の境目での負担変化が即座に切り替わります。',
+                  '夫婦世帯では、ご本人の検証年齢に合わせて配偶者の年齢も月単位で自動計算され、年の差による制度適用のズレが完全再現されます。',
+                  '60〜100歳（初期値75歳）'
+                )
+              }
+              className="text-slate-400 hover:text-sky-600"
+            >
+              <HelpCircle className="w-3.5 h-3.5" />
+            </button>
           </label>
           <span className="text-base font-extrabold text-sky-700 bg-sky-100 px-2 py-0.5 rounded font-mono">
             {state.targetAgeYears} 歳
@@ -373,12 +466,28 @@ export const InputSidebar: React.FC<InputSidebarProps> = ({
         </div>
       </div>
 
-      {/* 3. 寿命想定の設定（個々の寿命想定: 65歳〜120歳、デフォルト100歳） */}
+      {/* 3. 寿命想定の設定 */}
       <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-3">
         <div className="flex items-center justify-between">
           <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
             <HeartPulse className="w-4 h-4 text-rose-600" />
             寿命想定の設定（65〜120歳）
+            <button
+              type="button"
+              onClick={() =>
+                triggerHelp(
+                  '寿命想定（何歳まで生きるか）',
+                  'ライフプラン基本',
+                  'ご自身および配偶者が何歳まで生きるかを想定する数値です（デフォルト100歳）。',
+                  'スライダーを動かして65歳〜120歳の間で設定してください。夫婦世帯では、どちらかが先に他界した年齢以降は自動的に「死別単身世帯（単身155万円の崖）」へと移行し、遺族厚生年金が手取りに加算されます。',
+                  '「平均寿命」ではなく「95〜100歳」を前提に組むことで、長生きしても絶対にお金が底をつかない頑丈なプランが作れます。',
+                  'デフォルト100歳（設定可能範囲：65〜120歳）'
+                )
+              }
+              className="text-slate-400 hover:text-sky-600"
+            >
+              <HelpCircle className="w-3.5 h-3.5" />
+            </button>
           </span>
           <span className="text-[10px] text-slate-400">第2ステップと相互連動</span>
         </div>
@@ -387,7 +496,7 @@ export const InputSidebar: React.FC<InputSidebarProps> = ({
         <div>
           <div className="flex items-center justify-between text-xs mb-1">
             <span className="text-slate-600 font-medium">{state.primary.name}の想定寿命:</span>
-            <span className="font-bold font-mono text-sky-700 bg-sky-50 px-2 py-0.5 rounded border border-sky-200">
+            <span className="font-bold font-mono text-sky-700 bg-sky-50 px-2 py-0.2 rounded border border-sky-200">
               {state.primary.lifeExpectancyYears} 歳
             </span>
           </div>
@@ -407,7 +516,7 @@ export const InputSidebar: React.FC<InputSidebarProps> = ({
           <div className="pt-2 border-t border-slate-200/60">
             <div className="flex items-center justify-between text-xs mb-1">
               <span className="text-slate-600 font-medium">{state.spouse.name}の想定寿命:</span>
-              <span className="font-bold font-mono text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
+              <span className="font-bold font-mono text-rose-700 bg-rose-50 px-2 py-0.2 rounded border border-rose-200">
                 {state.spouse.lifeExpectancyYears} 歳
               </span>
             </div>
@@ -427,10 +536,27 @@ export const InputSidebar: React.FC<InputSidebarProps> = ({
       {/* 4. 夫婦の生年月・年齢精密入力 (夫婦の場合のみ) */}
       {isCouple && (
         <div className="border border-slate-200 rounded-xl p-3 bg-white">
-          <h4 className="text-xs font-bold text-slate-700 mb-2 flex items-center justify-between">
-            <span>ご本人・配偶者の現在年齢（満年齢＋月数）</span>
-            <span className="text-[10px] text-slate-400">制度ズレの精密計算用</span>
-          </h4>
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-xs font-bold text-slate-700">
+              ご本人・配偶者の現在年齢（満年齢＋月数）
+            </h4>
+            <button
+              type="button"
+              onClick={() =>
+                triggerHelp(
+                  '夫婦の満年齢と月数（年の差精密計算）',
+                  '夫婦設定',
+                  '夫婦それぞれの現在の満年齢と0〜11ヶ月を入力し、月単位での「年の差」を精密計算するための入力項目です。',
+                  'ご本人と配偶者の「年齢」と「月数」をそれぞれ半角数字で入力してください。',
+                  '例えば夫が75歳（後期高齢者・1割）になった時点で、妻が71歳8ヶ月（前期高齢者・2割）であるといった、夫婦間の制度適用時期のズレを完全にシミュレーションできます。',
+                  '例: 65歳0ヶ月 / 62歳4ヶ月'
+                )
+              }
+              className="text-slate-400 hover:text-sky-600"
+            >
+              <HelpCircle className="w-3.5 h-3.5" />
+            </button>
+          </div>
           <div className="space-y-2">
             <div className="flex items-center justify-between text-xs">
               <span className="text-slate-600 font-medium">{state.primary.name}の現在年齢:</span>
@@ -502,7 +628,7 @@ export const InputSidebar: React.FC<InputSidebarProps> = ({
         </div>
       )}
 
-      {/* 5. 年金・就労条件設定: 夫婦世帯なら切り替え不要で「ご本人」と「配偶者」を両方常時表示 */}
+      {/* 5. 年金・就労条件設定 */}
       <div className="space-y-4">
         <div className="flex items-center justify-between border-b pb-1">
           <span className="font-bold text-slate-800 text-xs">

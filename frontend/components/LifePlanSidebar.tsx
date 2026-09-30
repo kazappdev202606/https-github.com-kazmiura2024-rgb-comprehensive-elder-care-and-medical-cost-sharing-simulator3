@@ -5,6 +5,7 @@ import {
   PeriodItem,
   OneTimeItem
 } from '../types';
+import { HelpTopic } from './HelpExplanationModal';
 import {
   TrendingUp,
   Percent,
@@ -19,7 +20,8 @@ import {
   Award,
   HeartPulse,
   Sparkles,
-  Clock
+  Clock,
+  HelpCircle
 } from 'lucide-react';
 
 interface LifePlanSidebarProps {
@@ -27,20 +29,26 @@ interface LifePlanSidebarProps {
   onChange: (updater: (prev: SimulatorState) => SimulatorState) => void;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
+  onOpenHelp?: (topic: HelpTopic) => void;
 }
 
 export const LifePlanSidebar: React.FC<LifePlanSidebarProps> = ({
   state,
   onChange,
   onToggleCollapse,
+  onOpenHelp,
 }) => {
   const isCouple = state.householdType === 'couple';
   const cfg = state.lifePlan;
 
-  // 編集中のタブ（本人 / 配偶者）
   const [roleTab, setRoleTab] = useState<'primary' | 'spouse'>('primary');
 
-  // ヘルパー：PersonIncomeStrategy 更新（第1ステップの primary / spouse とも完全同期）
+  const triggerHelp = (title: string, category: string, whatIsIt: string, howToInput: string, point: string, referenceValue?: string) => {
+    if (onOpenHelp) {
+      onOpenHelp({ title, category, whatIsIt, howToInput, point, referenceValue });
+    }
+  };
+
   const handleStrategyChange = <K extends keyof PersonIncomeStrategy>(
     role: 'primary' | 'spouse',
     key: K,
@@ -52,7 +60,6 @@ export const LifePlanSidebar: React.FC<LifePlanSidebarProps> = ({
         [key]: val,
       };
 
-      // 第1ステップ側の PersonProfile も同時に双方向同期
       const updatedPerson = { ...prev[role] };
 
       if (key === 'careerRetireAge') {
@@ -62,10 +69,8 @@ export const LifePlanSidebar: React.FC<LifePlanSidebarProps> = ({
       } else if (key === 'pensionStartAge') {
         updatedPerson.pensionStartAge = val as number;
       } else if (key === 'pensionAge65GrossAnnual') {
-        // 年額から月額へ反映
         const monthly = Math.round(((val as number) / 12) * 10) / 10;
         updatedPerson.pensionAge65Monthly = monthly;
-        // 基礎年金と厚生年金の配分を維持または按分
         const currentTotal = updatedPerson.pensionBasicMonthly + updatedPerson.pensionEmployeesMonthly;
         if (currentTotal > 0) {
           const ratioBasic = updatedPerson.pensionBasicMonthly / currentTotal;
@@ -88,7 +93,6 @@ export const LifePlanSidebar: React.FC<LifePlanSidebarProps> = ({
     });
   };
 
-  // 寿命想定の変更（第1ステップと第2ステップの両方に完全同期）
   const handleLifeExpectancyChange = (role: 'primary' | 'spouse', value: number) => {
     onChange((prev) => ({
       ...prev,
@@ -99,7 +103,6 @@ export const LifePlanSidebar: React.FC<LifePlanSidebarProps> = ({
     }));
   };
 
-  // 臨時収入の追加
   const addTemporaryIncome = () => {
     const newItem: OneTimeItem = {
       id: `ti-${Date.now()}`,
@@ -126,7 +129,6 @@ export const LifePlanSidebar: React.FC<LifePlanSidebarProps> = ({
     }));
   };
 
-  // 動的リスト汎用更新（期間アイテム）
   const handlePeriodItemUpdate = (
     listKey: 'housingCosts' | 'baseLivingCosts' | 'activeLeisureAnnual' | 'specialPeriodExpenses',
     id: string,
@@ -178,7 +180,6 @@ export const LifePlanSidebar: React.FC<LifePlanSidebarProps> = ({
     }));
   };
 
-  // 動的リスト汎用更新（単発アイテム）
   const handleOneTimeItemUpdate = (
     listKey: 'largeLeisureOneTimes',
     id: string,
@@ -256,7 +257,22 @@ export const LifePlanSidebar: React.FC<LifePlanSidebarProps> = ({
             <Percent className="w-3.5 h-3.5 text-indigo-600" />
             1. 基本情報＆経済環境
           </span>
-          <span className="text-[10px] text-slate-400">マニュアル推奨値</span>
+          <button
+            type="button"
+            onClick={() =>
+              triggerHelp(
+                '基本情報＆経済環境（物価・利回り）',
+                '経済前提',
+                '物価の上昇率（インフレ率）や運用利回りなど、何十年にもわたる長期シミュレーションの土台となるマクロ前提です。',
+                '物価上昇率は1.0〜2.0%程度、NISA運用利回りは全世界株式の長期保守的な想定として3.5〜4.5%程度を目安に設定します。',
+                '物価が上がると将来の生活費・住居費・娯楽費が自動で複利膨張して計算されるため、現金の目減りリスクがはっきりと可視化されます。',
+                '物価1.5% / 運用利回り4.0%'
+              )
+            }
+            className="text-slate-400 hover:text-sky-600"
+          >
+            <HelpCircle className="w-3.5 h-3.5" />
+          </button>
         </div>
 
         {/* 年齢設定（夫婦世帯なら両方） */}
@@ -312,7 +328,7 @@ export const LifePlanSidebar: React.FC<LifePlanSidebarProps> = ({
           )}
         </div>
 
-        {/* 寿命想定の設定（第1・第2ステップ双方向完全連動） */}
+        {/* 寿命想定の設定 */}
         <div className="bg-white p-2.5 rounded-lg border border-slate-200 space-y-2.5">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1">
@@ -420,6 +436,22 @@ export const LifePlanSidebar: React.FC<LifePlanSidebarProps> = ({
           <span className="text-xs font-bold text-sky-950 flex items-center gap-1.5">
             <TrendingUp className="w-3.5 h-3.5 text-sky-600" />
             2. 収入・年金戦略
+            <button
+              type="button"
+              onClick={() =>
+                triggerHelp(
+                  '収入・年金戦略（退職金・手取り・iDeCo）',
+                  '収入設定',
+                  '正職・再雇用の手取り年収、退職金の一括手取り、公的年金の手取り率、iDeCo（確定拠出年金）の受取金額と時期を設定します。',
+                  '手取りベースで入力してください（額面の約80%が手取り目安）。退職金は一時金受け取りを前提とし、iDeCoは受け取る予定年齢と手取り総額を入力します。',
+                  '退職金は一時金で受け取ることで「退職所得控除」を満額利用でき、毎年の社会保険料や介護保険自己負担を押し上げずに済みます。',
+                  '退職金1,000〜2,000万円 / 手取り率80〜85%'
+                )
+              }
+              className="text-slate-400 hover:text-sky-600"
+            >
+              <HelpCircle className="w-3.5 h-3.5" />
+            </button>
           </span>
           {isCouple && (
             <div className="flex items-center bg-white rounded-lg p-0.5 border border-sky-200 text-[11px]">
@@ -637,8 +669,24 @@ export const LifePlanSidebar: React.FC<LifePlanSidebarProps> = ({
         {/* 臨時収入 (単発・随時追加リスト) */}
         <div className="space-y-1.5 pt-1">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-700">
+            <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
               臨時収入 (単発)：
+              <button
+                type="button"
+                onClick={() =>
+                  triggerHelp(
+                    '臨時収入 (単発)',
+                    '臨時収入',
+                    '親からの生前贈与や相続、満期を迎える個人年金や保険金など、特定の年齢の年にまとまって入る手取り収入です。',
+                    '「追加」ボタンを押して、名目（例: 親からの相続）、受取年齢（例: 67歳）、手取り金額（万円）を入力します。不要になったらゴミ箱アイコンで削除できます。',
+                    'まとまった一時収入があると、その年のキャッシュフローが一気に好転し、バケット2（運用資産）への再投資や娯楽費へ充当されます。',
+                    '例: 67歳 300万円'
+                  )
+                }
+                className="text-slate-400 hover:text-sky-600"
+              >
+                <HelpCircle className="w-3.5 h-3.5" />
+              </button>
             </span>
             <button
               type="button"
@@ -727,6 +775,22 @@ export const LifePlanSidebar: React.FC<LifePlanSidebarProps> = ({
           <span className="text-xs font-bold text-emerald-950 flex items-center gap-1.5">
             <Wallet className="w-3.5 h-3.5 text-emerald-600" />
             3. 現在の資産とバケット設定
+            <button
+              type="button"
+              onClick={() =>
+                triggerHelp(
+                  '3大バケット設定と現在の資産',
+                  'バケット管理',
+                  '全資産を「生活インフラ現金（バケット1）」、「運用資産・NISA（バケット2）」、「医療・介護防衛（バケット3）」の3つに機能分離します。',
+                  '現在の預貯金額と、運用している投資信託や株式の金額を入力します。バケット1（標準300万）とバケット3（標準500万）は取り崩しとは別枠で隔離されます。',
+                  '「運用をNISA枠(1800万)に制限する」にチェックを入れると、超過余剰金を課税の特定口座に入れず無リスク現金として温存します。',
+                  'バケット1: 300万 / バケット3: 500万'
+                )
+              }
+              className="text-slate-400 hover:text-sky-600"
+            >
+              <HelpCircle className="w-3.5 h-3.5" />
+            </button>
           </span>
           <span className="text-[10px] text-emerald-800 font-bold font-mono">
             預金＋運用資産計: {cfg.currentCashSavings + cfg.primaryStrategy.investments + (isCouple ? cfg.spouseStrategy.investments : 0)}万
@@ -858,6 +922,22 @@ export const LifePlanSidebar: React.FC<LifePlanSidebarProps> = ({
           <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
             <Coffee className="w-3.5 h-3.5 text-amber-600" />
             4. 支出設定（随時追加・期間変更可能）
+            <button
+              type="button"
+              onClick={() =>
+                triggerHelp(
+                  '支出設定（住居・生活・娯楽・特別支出）',
+                  '支出管理',
+                  '生活に必要な固定費、基本食費などのインフラ費、人生を楽しむためのアクティブ娯楽費、車のローンや学費などの期間特別支出を期間付きで設定できます。',
+                  '住居形態の変化（例: 70歳から賃貸移行）や、生活スタイルの変化（例: 80歳以降の基本生活費縮小）に合わせて「開始年齢〜終了年齢」と「年額」を設定してください。',
+                  'すべての支出には「設定した物価上昇率（年1.5%等）」が自動で複利加算され、将来の購買力低下を完全に反映します。',
+                  '基本生活費: 月15〜20万 / 娯楽費: 年30〜60万'
+                )
+              }
+              className="text-slate-400 hover:text-sky-600"
+            >
+              <HelpCircle className="w-3.5 h-3.5" />
+            </button>
           </span>
           <span className="text-[10px] text-slate-400">現在価値・インフレ自動連動</span>
         </div>

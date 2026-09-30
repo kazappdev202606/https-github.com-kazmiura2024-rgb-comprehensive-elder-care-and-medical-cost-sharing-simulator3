@@ -1,5 +1,5 @@
 {
-  "name": "comprehensive-elder-care-and-medical-cost-sharing-simulator2",
+  "name": "comprehensive-elder-care-and-medical-cost-sharing-simulator3",
   "workspaces": ["frontend", "backend"], 
   "scripts": {
     "dev-frontend": "npm run dev --prefix frontend",

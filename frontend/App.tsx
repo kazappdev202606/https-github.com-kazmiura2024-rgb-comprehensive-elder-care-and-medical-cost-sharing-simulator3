@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { SimulatorState, MatrixCellData, HouseholdType, AppViewMode, AppStep } from './types';
+import { SimulatorState, MatrixCellData, AppViewMode, AppStep } from './types';
 import { DEFAULT_STATE, CURRENT_STATE_VERSION } from './constants';
 import { buildMatrix } from './calculator';
 import { InputSidebar } from './components/InputSidebar';
@@ -7,10 +7,13 @@ import { MatrixView } from './components/MatrixView';
 import { LifetimeTimelineView } from './components/LifetimeTimelineView';
 import { LifePlanSidebar } from './components/LifePlanSidebar';
 import { LifePlanView } from './components/LifePlanView';
+import { AssetManagementSidebar } from './components/AssetManagementSidebar';
+import { AssetManagementView } from './components/AssetManagementView';
 import { DetailDiagnosisModal } from './components/DetailDiagnosisModal';
 import { AdviceReports } from './components/AdviceReports';
 import { ManualModal } from './components/ManualModal';
 import { SystemExplanationModal } from './components/SystemExplanationModal';
+import { HelpExplanationModal, HelpTopic } from './components/HelpExplanationModal';
 import {
   Download,
   Upload,
@@ -25,10 +28,11 @@ import {
   PanelLeftOpen,
   Split,
   Compass,
-  ShieldCheck
+  ShieldCheck,
+  Coins
 } from 'lucide-react';
 
-const LOCAL_STORAGE_KEY = 'senior_wall_simulator_state_v5';
+const LOCAL_STORAGE_KEY = 'senior_wall_simulator_state_v6';
 
 export const App: React.FC = () => {
   // 1. LocalStorage復元初期化
@@ -75,6 +79,7 @@ export const App: React.FC = () => {
   const [selectedCell, setSelectedCell] = useState<MatrixCellData | null>(null);
   const [isManualOpen, setIsManualOpen] = useState(false);
   const [isSystemOpen, setIsSystemOpen] = useState(false);
+  const [activeHelpTopic, setActiveHelpTopic] = useState<HelpTopic | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
@@ -207,7 +212,7 @@ export const App: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-100">
-      {/* グローバルヘッダー：第1ステップ / 第2ステップの最上部切替タブを新設 */}
+      {/* グローバルヘッダー：第1ステップ / 第2ステップ / 第3ステップの3段階ナビゲーション */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
         <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -231,8 +236,8 @@ export const App: React.FC = () => {
               )}
             </button>
 
-            {/* ステップ切り替えピルタブ（第1ステップ vs 第2ステップ） */}
-            <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 shadow-2xs">
+            {/* 3ステップ切り替えピルタブ */}
+            <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 shadow-2xs gap-1">
               <button
                 type="button"
                 onClick={() => setState((prev) => ({ ...prev, currentStep: 'step1_wall' }))}
@@ -243,7 +248,7 @@ export const App: React.FC = () => {
                 }`}
               >
                 <ShieldCheck className="w-4 h-4 text-sky-600" />
-                <span>第１ステップ：老後のお金・医療・介護の壁 統合シミュレーター</span>
+                <span className="hidden sm:inline">第１ステップ：</span>壁統合診断
               </button>
               <button
                 type="button"
@@ -255,7 +260,19 @@ export const App: React.FC = () => {
                 }`}
               >
                 <Compass className="w-4 h-4 text-amber-300" />
-                <span>第２ステップ：動的ライフプラン作成シミュレーター</span>
+                <span className="hidden sm:inline">第２ステップ：</span>動的ライフプラン表
+              </button>
+              <button
+                type="button"
+                onClick={() => setState((prev) => ({ ...prev, currentStep: 'step3_asset' }))}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black transition ${
+                  state.currentStep === 'step3_asset'
+                    ? 'bg-emerald-600 shadow text-white'
+                    : 'text-slate-600 hover:text-emerald-700'
+                }`}
+              >
+                <Coins className="w-4 h-4 text-amber-300" />
+                <span className="hidden sm:inline">第３ステップ：</span>資産運用・取り崩し
               </button>
             </div>
           </div>
@@ -332,7 +349,7 @@ export const App: React.FC = () => {
 
       {/* メインレイアウト */}
       <div className="flex-1 w-full max-w-[1920px] mx-auto flex flex-col md:flex-row overflow-hidden relative">
-        {/* 左側カラム: ステップに応じて切り替え */}
+        {/* 左側カラム: ステップに応じて3種類を切り替え */}
         {!isSidebarCollapsed && (
           <aside className="w-full md:w-[330px] lg:w-[350px] shrink-0 border-r border-slate-200 bg-white transition-all duration-200">
             {state.currentStep === 'step1_wall' ? (
@@ -341,13 +358,23 @@ export const App: React.FC = () => {
                 onChange={setState}
                 isCollapsed={isSidebarCollapsed}
                 onToggleCollapse={() => setIsSidebarCollapsed(true)}
+                onOpenHelp={(topic) => setActiveHelpTopic(topic)}
               />
-            ) : (
+            ) : state.currentStep === 'step2_lifeplan' ? (
               <LifePlanSidebar
                 state={state}
                 onChange={setState}
                 isCollapsed={isSidebarCollapsed}
                 onToggleCollapse={() => setIsSidebarCollapsed(true)}
+                onOpenHelp={(topic) => setActiveHelpTopic(topic)}
+              />
+            ) : (
+              <AssetManagementSidebar
+                state={state}
+                onChange={setState}
+                isCollapsed={isSidebarCollapsed}
+                onToggleCollapse={() => setIsSidebarCollapsed(true)}
+                onOpenHelp={(topic) => setActiveHelpTopic(topic)}
               />
             )}
           </aside>
@@ -482,9 +509,12 @@ export const App: React.FC = () => {
               {/* 制度助言・リスク分析レポート */}
               <AdviceReports currentResult={centerResult} householdType={state.householdType} />
             </>
-          ) : (
+          ) : state.currentStep === 'step2_lifeplan' ? (
             /* 第2ステップ：動的ライフプラン作成シミュレーター */
             <LifePlanView state={state} onChange={setState} />
+          ) : (
+            /* 第3ステップ：資産運用プラン作成シミュレーター */
+            <AssetManagementView state={state} onChange={setState} />
           )}
         </main>
       </div>
@@ -507,6 +537,9 @@ export const App: React.FC = () => {
 
       {/* 制度解説モーダル */}
       <SystemExplanationModal isOpen={isSystemOpen} onClose={() => setIsSystemOpen(false)} />
+
+      {/* 各項目ヘルプ解説モーダル */}
+      <HelpExplanationModal topic={activeHelpTopic} onClose={() => setActiveHelpTopic(null)} />
 
       {/* トースト通知 */}
       {toastMessage && (

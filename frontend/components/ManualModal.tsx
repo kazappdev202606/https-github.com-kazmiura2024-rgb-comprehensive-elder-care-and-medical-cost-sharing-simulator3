@@ -4,6 +4,7 @@ import {
   BookOpen,
   ShieldCheck,
   Compass,
+  Coins,
   CheckCircle2,
   AlertTriangle,
   Wallet,
@@ -14,7 +15,10 @@ import {
   Percent,
   Home,
   Clock,
-  Sparkles
+  Sparkles,
+  Lock,
+  ArrowRightLeft,
+  Split
 } from 'lucide-react';
 
 interface ManualModalProps {
@@ -23,14 +27,17 @@ interface ManualModalProps {
 }
 
 export const ManualModal: React.FC<ManualModalProps> = ({ isOpen, onClose }) => {
-  // 二部構成の親ステップ
-  const [part, setPart] = useState<'part1' | 'part2'>('part1');
+  // 3部構成の親ステップ切替
+  const [part, setPart] = useState<'part1' | 'part2' | 'part3'>('part1');
 
-  // 第1部用タブ
+  // 第1部用サブタブ
   const [part1Tab, setPart1Tab] = useState<'walls' | 'survivor' | 'reverse' | 'strategies'>('walls');
 
-  // 第2部用タブ
+  // 第2部用サブタブ
   const [part2Tab, setPart2Tab] = useState<'bucket' | 'rule100' | 'params' | 'levers'>('bucket');
+
+  // 第3部用サブタブ
+  const [part3Tab, setPart3Tab] = useState<'nisaPriority' | 'withdrawOrder' | 'sequenceRisk' | 'compare'>('nisaPriority');
 
   if (!isOpen) return null;
 
@@ -46,7 +53,7 @@ export const ManualModal: React.FC<ManualModalProps> = ({ isOpen, onClose }) => 
                 『安心と楽しみを両立する老後経済プラン』公式使い方マニュアル
               </span>
               <span className="text-[11px] text-slate-500 font-normal">
-                第１部（制度の壁診断）と第２部（動的ライフプラン表作成）の二部構成ガイド
+                第１部（壁診断）・第２部（動的ライフプラン表）・第３部（資産運用＆取り崩し）の3段階体系ガイド
               </span>
             </div>
           </div>
@@ -58,32 +65,45 @@ export const ManualModal: React.FC<ManualModalProps> = ({ isOpen, onClose }) => 
           </button>
         </div>
 
-        {/* 最上部：第１部 vs 第２部 切替ピルタブ */}
-        <div className="bg-slate-100 p-2 border-b border-slate-200 flex gap-2">
+        {/* 最上部：第１部 / 第２部 / 第３部 切替ピルタブ */}
+        <div className="bg-slate-100 p-2 border-b border-slate-200 flex gap-1.5 flex-wrap">
           <button
             type="button"
             onClick={() => setPart('part1')}
-            className={`flex-1 py-2 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-2 transition ${
+            className={`flex-1 py-2 px-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition ${
               part === 'part1'
                 ? 'bg-white shadow text-sky-700 border border-slate-200'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             <ShieldCheck className="w-4 h-4 text-sky-600" />
-            <span>第１部：老後のお金・医療・介護の壁 統合診断マニュアル</span>
+            <span>第１部：壁統合診断</span>
           </button>
 
           <button
             type="button"
             onClick={() => setPart('part2')}
-            className={`flex-1 py-2 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-2 transition ${
+            className={`flex-1 py-2 px-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition ${
               part === 'part2'
                 ? 'bg-indigo-600 shadow text-white'
                 : 'text-slate-600 hover:text-indigo-700'
             }`}
           >
             <Compass className="w-4 h-4 text-amber-300" />
-            <span>第２部：動的ライフプラン作成シミュレーター実践マニュアル</span>
+            <span>第２部：動的ライフプラン表</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setPart('part3')}
+            className={`flex-1 py-2 px-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition ${
+              part === 'part3'
+                ? 'bg-emerald-600 shadow text-white'
+                : 'text-slate-600 hover:text-emerald-700'
+            }`}
+          >
+            <Coins className="w-4 h-4 text-amber-300" />
+            <span>第３部：資産運用・取り崩し</span>
           </button>
         </div>
 
@@ -98,7 +118,7 @@ export const ManualModal: React.FC<ManualModalProps> = ({ isOpen, onClose }) => 
                   : 'border-transparent hover:text-slate-900'
               }`}
             >
-              ① 公的な「壁」と3つのゾーン
+              ① 公的な「壁」と3ゾーン
             </button>
             <button
               onClick={() => setPart1Tab('survivor')}
@@ -108,7 +128,7 @@ export const ManualModal: React.FC<ManualModalProps> = ({ isOpen, onClose }) => 
                   : 'border-transparent hover:text-slate-900'
               }`}
             >
-              ② 寿命・他界後の遺族年金と単身155万枠
+              ② 寿命・遺族年金と単身155万枠
             </button>
             <button
               onClick={() => setPart1Tab('reverse')}
@@ -118,7 +138,7 @@ export const ManualModal: React.FC<ManualModalProps> = ({ isOpen, onClose }) => 
                   : 'border-transparent hover:text-slate-900'
               }`}
             >
-              ③ 働き損リスクと障害年金の留意点
+              ③ 働き損リスクと障害年金
             </button>
             <button
               onClick={() => setPart1Tab('strategies')}
@@ -131,7 +151,7 @@ export const ManualModal: React.FC<ManualModalProps> = ({ isOpen, onClose }) => 
               ④ 4大目的別調整手順
             </button>
           </div>
-        ) : (
+        ) : part === 'part2' ? (
           <div className="flex border-b border-slate-200 bg-white text-xs font-bold text-slate-600">
             <button
               onClick={() => setPart2Tab('bucket')}
@@ -151,7 +171,7 @@ export const ManualModal: React.FC<ManualModalProps> = ({ isOpen, onClose }) => 
                   : 'border-transparent hover:text-slate-900'
               }`}
             >
-              ② 100歳までバケット2が1円以上残るルール
+              ② 100歳まで1円以上残るルール
             </button>
             <button
               onClick={() => setPart2Tab('params')}
@@ -161,7 +181,7 @@ export const ManualModal: React.FC<ManualModalProps> = ({ isOpen, onClose }) => 
                   : 'border-transparent hover:text-slate-900'
               }`}
             >
-              ③ インフレ連動・手取りスライド・NISA枠
+              ③ インフレ連動・手取り・NISA枠
             </button>
             <button
               onClick={() => setPart2Tab('levers')}
@@ -171,7 +191,50 @@ export const ManualModal: React.FC<ManualModalProps> = ({ isOpen, onClose }) => 
                   : 'border-transparent hover:text-slate-900'
               }`}
             >
-              ④ 資金ショートを解消する4大調整レバー
+              ④ 資金ショート解消の4大レバー
+            </button>
+          </div>
+        ) : (
+          <div className="flex border-b border-slate-200 bg-white text-xs font-bold text-slate-600">
+            <button
+              onClick={() => setPart3Tab('nisaPriority')}
+              className={`flex-1 py-2.5 px-2 text-center border-b-2 transition ${
+                part3Tab === 'nisaPriority'
+                  ? 'border-emerald-600 text-emerald-700 bg-emerald-50/50'
+                  : 'border-transparent hover:text-slate-900'
+              }`}
+            >
+              ① 余剰金投資とNISA最優先
+            </button>
+            <button
+              onClick={() => setPart3Tab('withdrawOrder')}
+              className={`flex-1 py-2.5 px-2 text-center border-b-2 transition ${
+                part3Tab === 'withdrawOrder'
+                  ? 'border-emerald-600 text-emerald-700 bg-emerald-50/50'
+                  : 'border-transparent hover:text-slate-900'
+              }`}
+            >
+              ② 取り崩しの黄金順序（現金→特定→NISA）
+            </button>
+            <button
+              onClick={() => setPart3Tab('sequenceRisk')}
+              className={`flex-1 py-2.5 px-2 text-center border-b-2 transition ${
+                part3Tab === 'sequenceRisk'
+                  ? 'border-emerald-600 text-emerald-700 bg-emerald-50/50'
+                  : 'border-transparent hover:text-slate-900'
+              }`}
+            >
+              ③ シーケンス・リスクとバケット防護
+            </button>
+            <button
+              onClick={() => setPart3Tab('compare')}
+              className={`flex-1 py-2.5 px-2 text-center border-b-2 transition ${
+                part3Tab === 'compare'
+                  ? 'border-emerald-600 text-emerald-700 bg-emerald-50/50'
+                  : 'border-transparent hover:text-slate-900'
+              }`}
+            >
+              ④ NISA限定 vs 特定口座併用比較
             </button>
           </div>
         )}
@@ -227,7 +290,7 @@ export const ManualModal: React.FC<ManualModalProps> = ({ isOpen, onClose }) => 
                   </p>
                   <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 text-xs text-rose-950 space-y-2">
                     <div className="font-bold text-rose-900 text-sm">知っておくべき遺族厚生年金の鉄則:</div>
-                    <ul className="list-disc list-inside space-y-1.5">
+                    <ul className="list-disc list-inside space-y-1.5 leading-relaxed">
                       <li>
                         <strong>遺族厚生年金は全額「完全非課税」:</strong> 判定基準年収（課税所得）には1円も加算されないため、いくら受給しても非課税枠や1割負担が剥奪されることはありません。手取り生活費にのみ100%丸々プラスされます。
                       </li>
@@ -454,12 +517,141 @@ export const ManualModal: React.FC<ManualModalProps> = ({ isOpen, onClose }) => 
               )}
             </>
           )}
+
+          {/* ══════════════════════════════════════════ */}
+          {/* 第3部：資産運用プラン作成シミュレーター */}
+          {/* ══════════════════════════════════════════ */}
+          {part === 'part3' && (
+            <>
+              {part3Tab === 'nisaPriority' && (
+                <div className="space-y-3.5">
+                  <h4 className="font-black text-emerald-950 text-base flex items-center gap-1.5">
+                    <Coins className="w-5 h-5 text-emerald-600" />
+                    余剰金投資とNISA最優先ルール
+                  </h4>
+                  <p>
+                    毎年の家計が黒字（余剰金）になった際、どこにどのような優先順位でお金を回すべきかの最適解をシミュレーションします。
+                  </p>
+                  <div className="bg-emerald-50/60 border border-emerald-200 rounded-xl p-4 text-xs space-y-2 text-emerald-950">
+                    <div className="font-bold text-emerald-900 text-sm">余剰金の投資ルーティング原則:</div>
+                    <ul className="list-disc list-inside space-y-1.5 leading-relaxed">
+                      <li>
+                        <strong>① NISA年間上限枠（360万/人）を最優先で消化:</strong> 生涯非課税枠（1,800万円/人、夫婦3,600万円）が残っている限り、手取り余剰金は真っ先にNISAへ投入します。
+                      </li>
+                      <li>
+                        <strong>② 特定口座からの自動移行（ロールオーバー）:</strong> 特定口座に資金がありNISA年間枠に余裕がある年は、特定口座を取り崩してNISAへ自動で買い直します。
+                      </li>
+                      <li>
+                        <strong>③ NISA満額後の分岐:</strong> 「NISA枠限定ON」なら無リスク現金で保持。「NISA枠限定OFF」なら特定口座（源泉徴収あり）へ投資し、さらなる複利増殖を図ります。
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              )}
+
+              {part3Tab === 'withdrawOrder' && (
+                <div className="space-y-3.5">
+                  <h4 className="font-black text-emerald-950 text-base flex items-center gap-1.5">
+                    <ArrowRightLeft className="w-5 h-5 text-indigo-600" />
+                    取り崩しの黄金順序（現金 → 特定口座 → NISA口座）
+                  </h4>
+                  <p>
+                    定年退職後や年金生活で家計が赤字（取り崩しフェーズ）に入った際、どの口座から取り崩すかで資産寿命は何年も変わります。
+                  </p>
+                  <div className="space-y-2 text-xs">
+                    <div className="p-3 bg-white rounded-xl border border-slate-200 flex items-start gap-3">
+                      <span className="w-6 h-6 rounded-full bg-slate-800 text-white flex items-center justify-center font-bold text-xs shrink-0">1</span>
+                      <div>
+                        <strong className="text-slate-900 block text-xs">余剰現金（待機普通預金）の先行消化</strong>
+                        <p className="text-slate-500 text-[11px] mt-0.5">利息がほぼつかない現金を真っ先に消費し、運用口座に触れない期間を稼ぎます。</p>
+                      </div>
+                    </div>
+
+                    <div className="p-3 bg-white rounded-xl border border-sky-300 flex items-start gap-3">
+                      <span className="w-6 h-6 rounded-full bg-sky-500 text-white flex items-center justify-center font-bold text-xs shrink-0">2</span>
+                      <div>
+                        <strong className="text-sky-900 block text-xs">特定口座（課税口座）の売却</strong>
+                        <p className="text-slate-600 text-[11px] mt-0.5">利益に約20.315%の税金がかかる課税口座から先に現金化していきます。</p>
+                      </div>
+                    </div>
+
+                    <div className="p-3 bg-white rounded-xl border border-indigo-400 bg-indigo-50/30 flex items-start gap-3">
+                      <span className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shrink-0">3</span>
+                      <div>
+                        <strong className="text-indigo-950 block text-xs">NISA口座（非課税口座）を最後まで温存</strong>
+                        <p className="text-indigo-900 text-[11px] mt-0.5">非課税で複利が働き続ける最強の資産を一番最後に回すことで、資産寿命を極限まで引き延ばします。</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {part3Tab === 'sequenceRisk' && (
+                <div className="space-y-3.5">
+                  <h4 className="font-black text-rose-950 text-base flex items-center gap-1.5">
+                    <AlertTriangle className="w-5 h-5 text-amber-500" />
+                    シーケンス・オブ・リターン・リスクとバケット防衛
+                  </h4>
+                  <p>
+                    取り崩し初期（65〜70歳頃）に歴史的な株価暴落が直撃すると、資産元本が削られ急激に枯渇へ向かう現象を「収益率の順序リスク（シーケンス・リスク）」と呼びます。
+                  </p>
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs space-y-2 text-slate-700">
+                    <div className="font-bold text-slate-900 text-sm">バケット1と3が最後の防波堤となる理由:</div>
+                    <p>
+                      本シミュレーターでは、バケット1（生活現金300万）とバケット3（医療介護防衛500万）を取り崩し計画から完全に別枠隔離しています。
+                    </p>
+                    <p className="leading-relaxed">
+                      市場が大暴落している最中に生活費のために株式を底値で売却する必要が一切なく、株価が回復するまでの数年間を無傷でやり過ごすことができます。
+                    </p>
+                    <div className="p-2 rounded bg-rose-50 border border-rose-200 text-rose-800 font-bold">
+                      ⚠️ テーブル上で「緊急防衛バッファ」から出動（-〇〇万）が表示された場合は、手元資産の抜本的な改善が必要なシグナルです。
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {part3Tab === 'compare' && (
+                <div className="space-y-3.5">
+                  <h4 className="font-black text-slate-800 text-base flex items-center gap-1.5">
+                    <Split className="w-5 h-5 text-indigo-600" />
+                    NISA限定 vs 特定口座併用の比較活用法
+                  </h4>
+                  <p>
+                    第3ステップでは、ワンクリックで「運用をNISA枠に限定した方針」と「特定口座もフル活用した方針」の生涯資産推移を横並びで比較できます。
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <div className="p-3.5 rounded-xl border border-sky-300 bg-sky-50/50 space-y-1">
+                      <div className="font-bold text-sky-950">方針A：運用をNISA枠に限定</div>
+                      <p className="text-sky-900 leading-relaxed text-[11px]">
+                        メリット：利益が非課税枠内のみのため、確定申告による社会保険料の跳ね上がりや介護保険2割化のリスクがゼロ。
+                        <br />
+                        デメリット：多額の余剰金が現金で寝てしまい、インフレで購買力が目減りする可能性。
+                      </p>
+                    </div>
+
+                    <div className="p-3.5 rounded-xl border border-indigo-300 bg-indigo-50/50 space-y-1">
+                      <div className="font-bold text-indigo-950">方針B：特定口座（源泉あり）も併用</div>
+                      <p className="text-indigo-900 leading-relaxed text-[11px]">
+                        メリット：余剰金を全額複利運用に回せるため、100歳時点での総資産額が数倍〜数千万円単位で大きくなる。
+                        <br />
+                        ポイント：必ず「源泉徴収あり（申告不要）」を選ぶことで、公的な所得判定に影響を与えずに安全に運用可能。
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </div>
 
         {/* モーダルフッター */}
         <div className="p-4 bg-slate-100 border-t border-slate-200 flex items-center justify-between text-xs">
           <span className="text-slate-500">
-            {part === 'part1' ? '※第２ステップ（動的ライフプラン表）のマニュアルは上部タブから閲覧できます' : '※第１ステップ（制度の壁診断）のマニュアルは上部タブから閲覧できます'}
+            {part === 'part1'
+              ? '※上部タブから「第２部（動的ライフプラン表）」「第３部（資産運用）」のマニュアルへ切り替えられます'
+              : part === 'part2'
+              ? '※上部タブから「第１部（壁診断）」「第３部（資産運用）」のマニュアルへ切り替えられます'
+              : '※上部タブから「第１部（壁診断）」「第２部（動的ライフプラン表）」のマニュアルへ切り替えられます'}
           </span>
           <button
             onClick={onClose}
